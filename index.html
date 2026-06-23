@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<!-- JSZip para backups -->
+<!-- JSZip -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <!-- Firebase -->
@@ -366,6 +366,7 @@
   .rojo td { background: #FFEBEE; }
   .azul td { background: #E3F2FD; }
 
+  /* ===== CALENDARIO GRANDE ===== */
   .calendar-header { 
     display: flex; 
     justify-content: space-between; 
@@ -406,7 +407,7 @@
     background: var(--beige); 
     border-radius: 16px; 
     padding: 14px 10px; 
-    min-height: 180px; 
+    min-height: 300px; 
     cursor: pointer; 
     transition: 0.2s; 
     border: 2px solid var(--naranja-claro); 
@@ -752,6 +753,71 @@
   .badge-grande { background: #FF8A65; color: #7a2e00; }
   .badge-extragrande { background: #EF5350; color: white; }
 
+  /* ===== HORARIOS DEL DÍA EN ADMIN ===== */
+  .horarios-dia-admin {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 15px 0;
+    padding: 15px;
+    background: white;
+    border-radius: 16px;
+    border: 2px solid var(--naranja-claro);
+    min-height: 70px;
+    align-items: center;
+    justify-content: center;
+  }
+  .horario-oval {
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 3px solid transparent;
+    text-align: center;
+    min-width: 70px;
+  }
+  .horario-oval:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .horario-oval.disponible {
+    background: var(--verde-muy-claro);
+    border-color: var(--verde-medio);
+    color: var(--verde-oscuro);
+  }
+  .horario-oval.disponible:hover {
+    background: #c8e6c9;
+  }
+  .horario-oval.ocupado {
+    background: #ffebee;
+    border-color: #c7362b;
+    color: #b02b20;
+    cursor: pointer;
+  }
+  .horario-oval.ocupado:hover {
+    background: #ffcdd2;
+  }
+  .horario-oval .hora { font-size: 0.9rem; }
+  .horario-oval .estado { font-size: 0.55rem; opacity: 0.7; }
+  .horario-oval.seleccionado {
+    border-color: var(--naranja-oscuro);
+    box-shadow: 0 0 0 3px var(--naranja-muy-claro);
+  }
+
+  .form-carga-rapida {
+    background: var(--verde-muy-claro);
+    padding: 15px 20px;
+    border-radius: 16px;
+    border: 2px solid var(--verde-medio);
+    margin: 15px 0;
+  }
+  .form-carga-rapida .form-grid { 
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+    gap: 10px;
+  }
+
   @media (max-width: 600px) {
     .cliente-header h1 { font-size: 1.8rem; }
     .cliente-header { padding: 30px 15px; }
@@ -764,6 +830,10 @@
     .hero { padding: 12px 18px; }
     .search-box input { width: 150px; }
     .btn-backup { font-size: 0.7rem; padding: 6px 12px; }
+    .horario-oval { min-width: 60px; padding: 6px 12px; font-size: 0.7rem; }
+    .horario-oval .hora { font-size: 0.8rem; }
+    .calendar-day { min-height: 150px; }
+    .calendar-grid { padding: 12px; gap: 6px; }
   }
 </style>
 </head>
@@ -806,7 +876,6 @@
   <div class="admin-mode" id="adminMode">
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('clientes', this)"><i class="fas fa-users"></i> Turnos</button>
-      <button class="tab-btn" onclick="switchTab('calendario', this)"><i class="fas fa-calendar-alt"></i> Calendario</button>
       <button class="tab-btn" onclick="switchTab('estadisticas', this)"><i class="fas fa-chart-bar"></i> Estadísticas</button>
       <button class="tab-btn" onclick="switchTab('recordatorios', this)"><i class="fas fa-bell"></i> Recordatorios</button>
     </div>
@@ -814,59 +883,78 @@
     <div id="pane-clientes" class="tab-pane active">
       <div class="form-card">
         <div class="form-title">
-          <span><i class="fas fa-scissors"></i> Registrar Turno</span>
+          <span><i class="fas fa-calendar-alt"></i> Calendario de Turnos</span>
           <div class="search-box">
             <input type="text" id="buscarCliente" placeholder="Buscar dueño o mascota..." onkeyup="buscarCliente()">
             <button onclick="buscarCliente()"><i class="fas fa-search"></i> Buscar</button>
             <button onclick="limpiarBusqueda()" style="background:#b0a9a1;"><i class="fas fa-times"></i> Limpiar</button>
           </div>
         </div>
-        <div class="form-grid">
-          <div class="input-group"><label>📅 Fecha *</label><input type="date" id="fecha"></div>
-          <div class="input-group"><label>⏰ Hora *</label>
-            <select id="hora" style="background: var(--beige); border: 2px solid var(--naranja-claro); border-radius: 24px; padding: 10px 14px;">
-              <option value="09:30">09:30</option>
-              <option value="10:00">10:00</option>
-              <option value="10:30">10:30</option>
-              <option value="11:00">11:00</option>
-              <option value="16:30">16:30</option>
-              <option value="17:00">17:00</option>
-              <option value="17:30">17:30</option>
-              <option value="18:00">18:00</option>
-              <option value="18:30">18:30</option>
-              <option value="19:00">19:00</option>
-            </select>
-          </div>
-          <div class="input-group"><label>👤 Dueño *</label><input type="text" id="duenio" placeholder="Nombre"></div>
-          <div class="input-group"><label>🐶 Mascota *</label><input type="text" id="mascota" placeholder="Mascota"></div>
-          <div class="input-group"><label>🐕 Raza</label><input type="text" id="raza" placeholder="Raza"></div>
-          <div class="input-group"><label>📱 Teléfono</label><input type="text" id="telefono" placeholder="549..."></div>
+
+        <!-- ===== CALENDARIO ===== -->
+        <div class="calendar-header">
+          <button onclick="cambiarSemanaAdmin(-1)"><i class="fas fa-chevron-left"></i> Anterior</button>
+          <h3 id="semanaLabelAdmin"></h3>
+          <button onclick="cambiarSemanaAdmin(1)">Siguiente <i class="fas fa-chevron-right"></i></button>
         </div>
-        <button class="btn-primary" onclick="registrarClienteAdmin()"><i class="fas fa-save"></i> Registrar Turno</button>
-      </div>
+        <div class="calendar-grid" id="calendarGridAdmin"></div>
+        <div style="font-size:0.65rem; color:#888; text-align:center; margin-top:8px;">
+          <span style="display:inline-block; width:14px; height:14px; background:#ffebee; border-radius:4px; vertical-align:middle; margin-right:4px; border:1px solid #c7362b;"></span> Completo
+          <span style="display:inline-block; width:14px; height:14px; background:var(--verde-muy-claro); border-radius:4px; vertical-align:middle; margin:0 4px 0 12px; border:1px solid var(--verde-medio);"></span> Disponible
+          <span style="display:inline-block; width:14px; height:14px; background:var(--naranja-muy-claro); border-radius:4px; vertical-align:middle; margin:0 4px 0 12px; border:1px solid var(--naranja-medio);"></span> Hoy
+          <span style="display:inline-block; width:14px; height:14px; background:#e3f2fd; border-radius:4px; vertical-align:middle; margin:0 4px 0 12px; border:1px solid #2196f3;"></span> Seleccionado
+        </div>
 
-      <div class="quick-filters">
-        <button class="filter-chip" onclick="aplicarFiltro('todos')">📋 Todos</button>
-        <button class="filter-chip" onclick="aplicarFiltro('proximos')">⏰ Próximos 7 días</button>
-        <button class="filter-chip" onclick="aplicarFiltro('vencidos')">⚠️ Vencidos</button>
-        <button class="filter-chip" onclick="aplicarFiltro('futuros')">📅 Turnos futuros</button>
-      </div>
+        <!-- ===== HORARIOS DEL DÍA SELECCIONADO ===== -->
+        <div style="margin-top: 20px;">
+          <label style="font-size:0.9rem; font-weight:600; color: var(--marron);">
+            <i class="fas fa-clock"></i> Horarios del día <span id="fechaSeleccionadaLabel">(seleccioná un día)</span>
+          </label>
+          <div class="horarios-dia-admin" id="horariosDiaAdmin">
+            <span style="color:#888;">Hacé click en un día del calendario para ver los horarios</span>
+          </div>
+        </div>
 
-      <div class="table-wrapper">
-        <table class="tabla">
-          <thead><tr><th>Dueño</th><th>Mascota</th><th>Raza</th><th>Tamaño</th><th>Teléfono</th><th>Fecha</th><th>Hora</th><th>Duración</th><th>Estado</th><th>📎</th><th>Acciones</th></tr></thead>
-          <tbody id="tablaClientes"></tbody>
-        </table>
-      </div>
-    </div>
+        <!-- ===== FORMULARIO DE CARGA RÁPIDA ===== -->
+        <div id="formularioCargaRapida" style="display:none;">
+          <div class="form-carga-rapida">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <span style="font-weight: 700; color: var(--verde-oscuro);">
+                <i class="fas fa-plus-circle"></i> Cargando turno para <span id="fechaCargaLabel"></span> a las <span id="horaCargaLabel"></span>
+              </span>
+              <button style="background: #ccc; border: none; padding: 6px 16px; border-radius: 30px; cursor: pointer; font-weight: 600;" onclick="cancelarCargaTurno()">
+                <i class="fas fa-times"></i> Cancelar
+              </button>
+            </div>
+            <div class="form-grid" style="margin-top: 12px;">
+              <div class="input-group"><label>📅 Fecha</label><input type="date" id="fechaAdmin" readonly style="background:#f5f5f5;"></div>
+              <div class="input-group"><label>⏰ Hora</label><input type="text" id="horaAdmin" readonly style="background:#f5f5f5;"></div>
+              <div class="input-group"><label>👤 Dueño *</label><input type="text" id="duenioAdmin" placeholder="Nombre"></div>
+              <div class="input-group"><label>🐶 Mascota *</label><input type="text" id="mascotaAdmin" placeholder="Mascota"></div>
+              <div class="input-group"><label>🐕 Raza</label><input type="text" id="razaAdmin" placeholder="Raza"></div>
+              <div class="input-group"><label>📱 Teléfono</label><input type="text" id="telefonoAdmin" placeholder="549..."></div>
+              <div class="input-group"><label>📏 Tamaño</label>
+                <select id="tamanoAdmin">
+                  <option value="chico">🐕 Chico (1h) - $35.000</option>
+                  <option value="mediano">🐕 Mediano (2h) - $40.000</option>
+                  <option value="grande">🐕 Grande (3h) - $60.000</option>
+                  <option value="extragrande">🐕 Extragrande (3h) - $80.000</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn-primary" onclick="guardarTurnoDesdeAdmin()" style="width: auto; padding: 10px 30px; margin-top: 8px;">
+              <i class="fas fa-save"></i> Guardar turno
+            </button>
+          </div>
+        </div>
 
-    <div id="pane-calendario" class="tab-pane">
-      <div class="calendar-header">
-        <button onclick="cambiarSemana(-1)"><i class="fas fa-chevron-left"></i> Anterior</button>
-        <h3 id="semanaLabel"></h3>
-        <button onclick="cambiarSemana(1)">Siguiente <i class="fas fa-chevron-right"></i></button>
+        <div class="table-wrapper" style="margin-top: 20px;">
+          <table class="tabla">
+            <thead><tr><th>Dueño</th><th>Mascota</th><th>Raza</th><th>Tamaño</th><th>Teléfono</th><th>Fecha</th><th>Hora</th><th>Duración</th><th>Estado</th><th>📎</th><th>Acciones</th></tr></thead>
+            <tbody id="tablaClientes"></tbody>
+          </table>
+        </div>
       </div>
-      <div class="calendar-grid" id="calendarGridAdmin"></div>
     </div>
 
     <div id="pane-estadisticas" class="tab-pane">
@@ -919,7 +1007,7 @@
 
 <script>
 // ============================================================
-// ===== CONFIGURACIÓN DE FIREBASE =====
+// ===== CONFIGURACIÓN =====
 // ============================================================
 const firebaseConfig = {
     apiKey: "AIzaSyBYLsAV2DjRZD3dNeQYd7McngRguBP3LsE",
@@ -929,27 +1017,25 @@ const firebaseConfig = {
     messagingSenderId: "523162238241",
     appId: "1:523162238241:web:32d79a72ec101198285260"
 };
-// ============================================================
 
 const CONTRASEÑA_ADMIN = "familia2026";
 const COLECCION = 'turnos';
+const PELUQUEROS_POR_TURNO = 1;
+const HORA_CIERRE = '20:30';
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ============================================================
-// ===== TAMAÑOS Y DURACIONES =====
+// ===== TAMAÑOS Y DURACIONES (CORREGIDO) =====
 // ============================================================
 const TAMAÑOS = {
-    'chico': { nombre: '🐕 Chico', duracion: 90, precio: 35000, badge: 'badge-chico' },
+    'chico': { nombre: '🐕 Chico', duracion: 60, precio: 35000, badge: 'badge-chico' },
     'mediano': { nombre: '🐕 Mediano', duracion: 120, precio: 40000, badge: 'badge-mediano' },
-    'grande': { nombre: '🐕 Grande', duracion: 150, precio: 60000, badge: 'badge-grande' },
-    'extragrande': { nombre: '🐕 Extragrande', duracion: 240, precio: 80000, badge: 'badge-extragrande' }
+    'grande': { nombre: '🐕 Grande', duracion: 180, precio: 60000, badge: 'badge-grande' },
+    'extragrande': { nombre: '🐕 Extragrande', duracion: 180, precio: 80000, badge: 'badge-extragrande' }
 };
 
-// ============================================================
-// ===== HORARIOS (ACTUALIZADOS) =====
-// ============================================================
 const HORARIOS_BASE = ['09:30', '10:00', '10:30', '11:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
 
 // ============================================================
@@ -957,7 +1043,7 @@ const HORARIOS_BASE = ['09:30', '10:00', '10:30', '11:00', '16:30', '17:00', '17
 // ============================================================
 let clientes = [];
 let filtroActual = 'todos';
-let semanaOffset = 0;
+let semanaOffsetAdmin = 0;
 let razasChart, estadoChart;
 let clienteModalActual = null;
 let fotosTemporales = [];
@@ -965,7 +1051,9 @@ let modoActual = 'cliente';
 let clienteSeleccionado = { fecha: null, hora: null };
 let datosCargados = false;
 let callbackWhatsApp = null;
-let clienteTamanoSeleccionado = 'chico'; // 👈 Guarda el tamaño elegido
+let clienteTamanoSeleccionado = 'chico';
+let fechaSeleccionadaAdmin = null;
+let horaSeleccionadaAdmin = null;
 
 // ============================================================
 // ===== FUNCIONES DE FECHA =====
@@ -1031,15 +1119,8 @@ function obtenerHoraMinimaReserva() {
 // ============================================================
 // ===== OBTENER HORARIOS DISPONIBLES =====
 // ============================================================
-function obtenerHorariosDisponibles(fecha, duracionMinutos = 90) {
+function obtenerHorariosDisponibles(fecha, duracionMinutos = 60) {
     const turnosDia = clientes.filter(c => c.fecha === fecha);
-    const ocupados = turnosDia.map(c => {
-        const duracion = TAMAÑOS[c.tamano]?.duracion || 90;
-        return {
-            inicio: c.hora || '09:30',
-            fin: sumarMinutos(c.hora || '09:30', duracion)
-        };
-    }).sort((a, b) => compararHoras(a.inicio, b.inicio));
 
     const hoy = new Date().toISOString().slice(0,10);
     const horaMinima = fecha === hoy ? obtenerHoraMinimaReserva() : '00:00';
@@ -1052,47 +1133,66 @@ function obtenerHorariosDisponibles(fecha, duracionMinutos = 90) {
         if (fecha === hoy && compararHoras(hora, horaMinima) < 0) {
             ocupado = true;
             motivo = '⏳ 2hs de anticipación';
+            return { hora, ocupado, motivo };
         }
 
-        if (!ocupado) {
-            for (const blq of ocupados) {
-                if (compararHoras(hora, blq.fin) < 0 && compararHoras(horaFin, blq.inicio) > 0) {
-                    ocupado = true;
-                    motivo = `❌ Ocupado hasta ${blq.fin}`;
-                    break;
-                }
+        if (compararHoras(horaFin, HORA_CIERRE) > 0) {
+            ocupado = true;
+            motivo = '❌ No alcanza';
+            return { hora, ocupado, motivo };
+        }
+
+        for (const c of turnosDia) {
+            const duracion = TAMAÑOS[c.tamano]?.duracion || 60;
+            const inicio = c.hora || '09:30';
+            const fin = sumarMinutos(inicio, duracion);
+            
+            if (compararHoras(hora, fin) < 0 && compararHoras(horaFin, inicio) > 0) {
+                ocupado = true;
+                motivo = `❌ Ocupado`;
+                return { hora, ocupado, motivo };
             }
         }
+
+        ocupado = false;
+        motivo = '✅ Disponible';
 
         return { hora, ocupado, motivo };
     });
 }
 
+// ============================================================
+// ===== OBTENER DÍAS DISPONIBLES =====
+// ============================================================
 function obtenerDiasDisponibles() {
-  const dias = [];
-  const hoy = new Date();
-  for (let i = 0; i < 14; i++) {
-    const dia = new Date(hoy);
-    dia.setDate(hoy.getDate() + i);
-    const diaStr = dia.toISOString().slice(0,10);
-    const turnosDia = clientes.filter(c => c.fecha === diaStr);
-    let tiempoOcupado = 0;
-    turnosDia.forEach(c => {
-        tiempoOcupado += TAMAÑOS[c.tamano]?.duracion || 90;
-    });
-    const tiempoDisponible = 480;
-    const disponible = tiempoOcupado < tiempoDisponible;
-    dias.push({
-      fecha: diaStr,
-      dia: dia.getDate(),
-      mes: dia.getMonth() + 1,
-      diaSemana: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dia.getDay()],
-      turnos: turnosDia.length,
-      tiempoOcupado: tiempoOcupado,
-      disponible: disponible
-    });
-  }
-  return dias;
+    const dias = [];
+    const hoy = new Date();
+    const capacidadTotal = PELUQUEROS_POR_TURNO * HORARIOS_BASE.length;
+
+    for (let i = 0; i < 14; i++) {
+        const dia = new Date(hoy);
+        dia.setDate(hoy.getDate() + i);
+        const diaStr = dia.toISOString().slice(0,10);
+        const turnosDia = clientes.filter(c => c.fecha === diaStr);
+        
+        let tiempoOcupado = 0;
+        turnosDia.forEach(c => {
+            tiempoOcupado += TAMAÑOS[c.tamano]?.duracion || 60;
+        });
+
+        const disponible = turnosDia.length < capacidadTotal;
+
+        dias.push({
+            fecha: diaStr,
+            dia: dia.getDate(),
+            mes: dia.getMonth() + 1,
+            diaSemana: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dia.getDay()],
+            turnos: turnosDia.length,
+            tiempoOcupado: tiempoOcupado,
+            disponible: disponible
+        });
+    }
+    return dias;
 }
 
 // ============================================================
@@ -1168,7 +1268,7 @@ async function eliminarTurnoFirestore(id) {
 }
 
 // ============================================================
-// ========== BACKUP CON ZIP ==========
+// ========== BACKUP ==========
 // ============================================================
 async function descargarBackup() {
   if (clientes.length === 0) {
@@ -1338,13 +1438,13 @@ function renderizarAdmin() {
   renderizarCalendarioAdmin();
   renderizarEstadisticas();
   renderizarListaRecordatorios();
+  actualizarHorariosDiaAdmin();
 }
 
 function renderizarCliente() {
     const container = document.getElementById('clienteContent');
     if (!container) return;
 
-    // ===== CARTELERA =====
     let carteleraHTML = `
         <div class="cliente-card cartelera">
             <h2><i class="fas fa-info-circle" style="color: var(--naranja-medio);"></i> Nuestros Servicios</h2>
@@ -1366,32 +1466,32 @@ function renderizarCliente() {
                 <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
                     <div style="font-size: 2rem;">🐕</div>
                     <div style="font-weight: 700; color: var(--naranja-oscuro);">Chico</div>
-                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 1.5 hs</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 1 h</div>
                     <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$35.000</div>
                 </div>
                 <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
                     <div style="font-size: 2rem;">🐕</div>
                     <div style="font-weight: 700; color: var(--naranja-oscuro);">Mediano</div>
-                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 2 hs</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 2 h</div>
                     <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$40.000</div>
                 </div>
                 <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
                     <div style="font-size: 2rem;">🐕</div>
                     <div style="font-weight: 700; color: var(--naranja-oscuro);">Grande</div>
-                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 2.5 hs</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 3 h</div>
                     <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$60.000</div>
                 </div>
                 <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
                     <div style="font-size: 2rem;">🐕</div>
                     <div style="font-weight: 700; color: var(--naranja-oscuro);">Extragrande</div>
-                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 4 hs</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 3 h</div>
                     <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$80.000</div>
                 </div>
             </div>
 
             <div style="background: var(--verde-muy-claro); border: 2px solid var(--verde-medio); border-radius: 16px; padding: 18px; margin-top: 20px; text-align: center;">
                 <div style="font-size: 1.2rem; font-weight: 700; color: var(--verde-oscuro);">
-                    🎯 ¡Realizá los mantenimientos dentro del mes y obtené un <span style="color: var(--naranja-oscuro);">DESCUENTO POR MANTENIMIENTO</span>!
+                    🎯 ¡Si tenes un plan Mensual de Peluqueria con nosotros, obtenés un <span style="color: var(--naranja-oscuro);">DESCUENTO POR MANTENIMIENTO</span>!
                 </div>
                 <div style="color: var(--marron); font-size: 0.95rem; margin-top: 5px;">
                     Consultá por nuestro plan de mantenimiento mensual.
@@ -1435,7 +1535,6 @@ function renderizarCliente() {
         </div>
     `;
 
-    // ===== SELECCIÓN DE TAMAÑO =====
     html += `
         <div class="cliente-card">
             <h2><i class="fas fa-dog" style="color: var(--naranja-medio);"></i> Seleccioná el tamaño de tu perro</h2>
@@ -1443,10 +1542,10 @@ function renderizarCliente() {
                 <div style="margin-bottom: 15px;">
                     <label style="font-weight:600; font-size:0.85rem; color: var(--marron);">📏 Tamaño *</label>
                     <select id="clienteTamano" onchange="actualizarDuracionYHorarios()" style="width:100%; padding:14px 18px; border:2px solid var(--naranja-claro); border-radius:24px; background:#fefcf9; font-size:0.95rem;">
-                        <option value="chico" ${clienteTamanoSeleccionado === 'chico' ? 'selected' : ''}>🐕 Chico (1.5 hs) - $35.000</option>
-                        <option value="mediano" ${clienteTamanoSeleccionado === 'mediano' ? 'selected' : ''}>🐕 Mediano (2 hs) - $40.000</option>
-                        <option value="grande" ${clienteTamanoSeleccionado === 'grande' ? 'selected' : ''}>🐕 Grande (2.5 hs) - $60.000</option>
-                        <option value="extragrande" ${clienteTamanoSeleccionado === 'extragrande' ? 'selected' : ''}>🐕 Extragrande (4 hs) - $80.000</option>
+                        <option value="chico" ${clienteTamanoSeleccionado === 'chico' ? 'selected' : ''}>🐕 Chico (1 h) - $35.000</option>
+                        <option value="mediano" ${clienteTamanoSeleccionado === 'mediano' ? 'selected' : ''}>🐕 Mediano (2 h) - $40.000</option>
+                        <option value="grande" ${clienteTamanoSeleccionado === 'grande' ? 'selected' : ''}>🐕 Grande (3 h) - $60.000</option>
+                        <option value="extragrande" ${clienteTamanoSeleccionado === 'extragrande' ? 'selected' : ''}>🐕 Extragrande (3 h) - $80.000</option>
                     </select>
                     <div style="font-size:0.85rem; color: var(--marron); margin-top:5px;">
                         ⏱️ Duración estimada: <strong id="clienteDuracion">${TAMAÑOS[clienteTamanoSeleccionado].duracion / 60} horas</strong>
@@ -1456,11 +1555,10 @@ function renderizarCliente() {
         </div>
     `;
 
-    // ===== HORARIOS =====
     if (clienteSeleccionado.fecha) {
         const selectTamano = document.getElementById('clienteTamano');
         const tamano = selectTamano ? selectTamano.value : clienteTamanoSeleccionado;
-        const duracion = TAMAÑOS[tamano]?.duracion || 90;
+        const duracion = TAMAÑOS[tamano]?.duracion || 60;
         const horarios = obtenerHorariosDisponibles(clienteSeleccionado.fecha, duracion);
         html += `
             <div class="cliente-card">
@@ -1482,7 +1580,6 @@ function renderizarCliente() {
         html += `</div></div>`;
     }
 
-    // ===== FORMULARIO =====
     if (clienteSeleccionado.fecha && clienteSeleccionado.hora) {
         html += `
             <div class="cliente-card">
@@ -1519,37 +1616,249 @@ function renderizarCliente() {
     container.innerHTML = html;
 }
 
-function actualizarDuracionYHorarios() {
-    const select = document.getElementById('clienteTamano');
-    const duracionSpan = document.getElementById('clienteDuracion');
-    if (select && duracionSpan) {
-        const tamano = select.value;
-        clienteTamanoSeleccionado = tamano;
-        const info = TAMAÑOS[tamano];
-        duracionSpan.textContent = info.duracion / 60 + ' horas';
-        renderizarCliente();
+// ============================================================
+// ===== CALENDARIO ADMIN =====
+// ============================================================
+function renderizarCalendarioAdmin() {
+    const grid = document.getElementById("calendarGridAdmin");
+    if (!grid) return;
+    
+    let fecha = new Date();
+    const hoy = new Date();
+    fecha.setDate(fecha.getDate() + semanaOffsetAdmin * 7);
+    
+    const inicio = new Date(fecha);
+    inicio.setDate(fecha.getDate() - fecha.getDay());
+    
+    const finSemana = new Date(inicio);
+    finSemana.setDate(inicio.getDate() + 6);
+    document.getElementById("semanaLabelAdmin").innerHTML = 
+        `${inicio.toLocaleDateString()} - ${finSemana.toLocaleDateString()}`;
+    
+    grid.innerHTML = "";
+    ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"].forEach(d => { 
+        grid.innerHTML += `<div class="calendar-day-header">${d}</div>`; 
+    });
+    
+    for (let i = 0; i < 7; i++) {
+        let dia = new Date(inicio);
+        dia.setDate(inicio.getDate() + i);
+        let diaStr = dia.toISOString().slice(0,10);
+        let eventos = clientes.filter(c => c.fecha === diaStr);
+        const esHoy = diaStr === hoy.toISOString().slice(0,10);
+        const esSeleccionado = diaStr === fechaSeleccionadaAdmin;
+        
+        const turnosDia = clientes.filter(c => c.fecha === diaStr);
+        const totalTurnos = turnosDia.length;
+        const capacidad = PELUQUEROS_POR_TURNO * HORARIOS_BASE.length;
+        const disponible = totalTurnos < capacidad;
+        
+        let bgColor = "var(--beige)";
+        let borderColor = "var(--naranja-claro)";
+        
+        if (esSeleccionado) {
+            bgColor = "#e3f2fd";
+            borderColor = "#2196f3";
+        } else if (esHoy) {
+            bgColor = "var(--naranja-muy-claro)";
+            borderColor = "var(--naranja-medio)";
+        } else if (!disponible) {
+            bgColor = "#ffebee";
+            borderColor = "#c7362b";
+        } else {
+            bgColor = "var(--verde-muy-claro)";
+            borderColor = "var(--verde-medio)";
+        }
+        
+        let estadoIcono = disponible ? '🟢' : '🔴';
+        if (esHoy) estadoIcono = '📌';
+        
+        let html = `<div class="calendar-day" onclick="seleccionarDiaAdmin('${diaStr}')"
+            style="background: ${bgColor}; border-color: ${borderColor}">
+            <div class="calendar-day-number">${dia.getDate()}</div>
+            <div style="font-size:0.6rem; color:var(--marron);">${estadoIcono} ${totalTurnos}/${capacidad}</div>`;
+        
+        eventos.sort((a,b) => (a.hora || "10:00").localeCompare(b.hora || "10:00"));
+        eventos.forEach(e => { 
+            const info = TAMAÑOS[e.tamano] || TAMAÑOS['chico'];
+            html += `<div class="calendar-event" onclick="event.stopPropagation(); abrirModalCliente('${e.id}')">
+                <strong>${e.hora || '10:00'}</strong> 🐕 ${e.mascota} (${info.nombre})
+            </div>`; 
+        });
+        html += `</div>`;
+        grid.innerHTML += html;
     }
-}
-
-function seleccionarDiaCliente(fecha) {
-    // Guardar el tamaño seleccionado antes de recargar
-    const select = document.getElementById('clienteTamano');
-    if (select) {
-        clienteTamanoSeleccionado = select.value;
-    }
-    clienteSeleccionado.fecha = fecha;
-    clienteSeleccionado.hora = null;
-    renderizarCliente();
-}
-
-function seleccionarHoraCliente(hora) {
-  clienteSeleccionado.hora = hora;
-  renderizarCliente();
-  document.getElementById('clienteContent').scrollIntoView({ behavior: 'smooth' });
 }
 
 // ============================================================
-// ===== CONFIRMAR TURNO =====
+// ===== SELECCIONAR DÍA EN ADMIN =====
+// ============================================================
+function seleccionarDiaAdmin(fecha) {
+    fechaSeleccionadaAdmin = fecha;
+    document.getElementById('fechaSeleccionadaLabel').innerHTML = `- ${formatearFechaLocal(fecha)}`;
+    document.getElementById('fechaAdmin').value = fecha;
+    
+    horaSeleccionadaAdmin = null;
+    document.getElementById('horaAdmin').value = '';
+    document.getElementById('formularioCargaRapida').style.display = 'none';
+    
+    actualizarHorariosDiaAdmin();
+    renderizarCalendarioAdmin();
+}
+
+// ============================================================
+// ===== ACTUALIZAR HORARIOS DEL DÍA (ÓVALOS) =====
+// ============================================================
+function actualizarHorariosDiaAdmin() {
+    const container = document.getElementById('horariosDiaAdmin');
+    if (!container) return;
+    
+    const fecha = document.getElementById('fechaAdmin').value;
+    if (!fecha) {
+        container.innerHTML = '<span style="color:#888;">Hacé click en un día del calendario para ver los horarios</span>';
+        return;
+    }
+    
+    const horarios = obtenerHorariosDisponibles(fecha, 60);
+    
+    if (horarios.length === 0) {
+        container.innerHTML = '<span style="color:#888;">No hay horarios configurados para este día</span>';
+        return;
+    }
+    
+    let html = '';
+    horarios.forEach(h => {
+        const estado = h.ocupado ? 'ocupado' : 'disponible';
+        const estadoTexto = h.ocupado ? 'Ocupado' : 'Disponible';
+        const icono = h.ocupado ? '🔴' : '🟢';
+        const onclick = h.ocupado ? `verTurnosHorario('${fecha}', '${h.hora}')` : `seleccionarHoraAdmin('${fecha}', '${h.hora}')`;
+        
+        html += `
+            <div class="horario-oval ${estado}" onclick="${onclick}">
+                <div class="hora">${h.hora}</div>
+                <div class="estado">${icono} ${estadoTexto}</div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// ============================================================
+// ===== SELECCIONAR HORA EN ADMIN =====
+// ============================================================
+function seleccionarHoraAdmin(fecha, hora) {
+    horaSeleccionadaAdmin = hora;
+    document.getElementById('horaAdmin').value = hora;
+    document.getElementById('fechaCargaLabel').innerHTML = formatearFechaLocal(fecha);
+    document.getElementById('horaCargaLabel').innerHTML = hora;
+    
+    document.getElementById('formularioCargaRapida').style.display = 'block';
+    document.getElementById('duenioAdmin').focus();
+    
+    document.getElementById('duenioAdmin').value = '';
+    document.getElementById('mascotaAdmin').value = '';
+    document.getElementById('razaAdmin').value = '';
+    document.getElementById('telefonoAdmin').value = '';
+    document.getElementById('tamanoAdmin').value = 'chico';
+    
+    const ovals = document.querySelectorAll('.horario-oval');
+    ovals.forEach(ov => ov.classList.remove('seleccionado'));
+    const ovalsList = document.querySelectorAll('.horario-oval');
+    ovalsList.forEach(ov => {
+        if (ov.querySelector('.hora')?.textContent === hora) {
+            ov.classList.add('seleccionado');
+        }
+    });
+    
+    mostrarToast(`📝 Cargando turno para ${formatearFechaLocal(fecha)} a las ${hora}`);
+}
+
+// ============================================================
+// ===== VER TURNOS DE UN HORARIO OCUPADO =====
+// ============================================================
+function verTurnosHorario(fecha, hora) {
+    const turnos = clientes.filter(c => c.fecha === fecha && c.hora === hora);
+    if (turnos.length === 0) {
+        mostrarToast('No hay turnos en este horario', true);
+        return;
+    }
+    if (turnos.length === 1) {
+        abrirModalCliente(turnos[0].id);
+        return;
+    }
+    let mensaje = 'Turnos en este horario:\n';
+    turnos.forEach((c, i) => {
+        mensaje += `${i+1}. ${c.mascota} - ${c.duenio} (${TAMAÑOS[c.tamano]?.nombre || 'Chico'})\n`;
+    });
+    alert(mensaje);
+}
+
+// ============================================================
+// ===== GUARDAR TURNO DESDE ADMIN =====
+// ============================================================
+async function guardarTurnoDesdeAdmin() {
+    const fecha = document.getElementById('fechaAdmin').value;
+    const hora = document.getElementById('horaAdmin').value;
+    const duenio = document.getElementById('duenioAdmin').value.trim();
+    const mascota = document.getElementById('mascotaAdmin').value.trim();
+    const raza = document.getElementById('razaAdmin').value.trim();
+    const telefono = document.getElementById('telefonoAdmin').value.trim();
+    const tamano = document.getElementById('tamanoAdmin').value;
+    
+    if (!duenio || !mascota) {
+        alert('Completá Dueño y Mascota (obligatorios)');
+        return;
+    }
+    
+    const duracion = TAMAÑOS[tamano].duracion;
+    const horarios = obtenerHorariosDisponibles(fecha, duracion);
+    const horarioSeleccionado = horarios.find(h => h.hora === hora);
+    if (horarioSeleccionado?.ocupado) {
+        alert('❌ El horario ya fue ocupado. Recargá la página y volvé a intentar.');
+        return;
+    }
+    
+    const nuevoTurno = {
+        fecha: fecha,
+        hora: hora,
+        duenio: duenio,
+        mascota: mascota,
+        raza: raza,
+        telefono: telefono,
+        tamano: tamano,
+        observaciones: '',
+        fotos: []
+    };
+    
+    const guardado = await guardarTurnoFirestore(nuevoTurno);
+    if (guardado) {
+        mostrarToast(`✅ Turno registrado: ${mascota} - ${duenio}`);
+        document.getElementById('formularioCargaRapida').style.display = 'none';
+        horaSeleccionadaAdmin = null;
+        await cargarTurnosFirestore();
+        renderizarAdmin();
+        renderizarCliente();
+    } else {
+        alert('❌ Error al guardar el turno');
+    }
+}
+
+function cancelarCargaTurno() {
+    document.getElementById('formularioCargaRapida').style.display = 'none';
+    horaSeleccionadaAdmin = null;
+    const ovals = document.querySelectorAll('.horario-oval');
+    ovals.forEach(ov => ov.classList.remove('seleccionado'));
+    mostrarToast('❌ Carga de turno cancelada');
+}
+
+function cambiarSemanaAdmin(delta) { 
+    semanaOffsetAdmin += delta; 
+    renderizarCalendarioAdmin(); 
+}
+
+// ============================================================
+// ===== CONFIRMAR TURNO (MODO CLIENTE) =====
 // ============================================================
 async function confirmarTurnoCliente() {
   const mascota = document.getElementById('clienteMascota').value.trim();
@@ -1573,7 +1882,7 @@ async function confirmarTurnoCliente() {
   const horarios = obtenerHorariosDisponibles(clienteSeleccionado.fecha, duracion);
   const horarioSeleccionado = horarios.find(h => h.hora === clienteSeleccionado.hora);
   if (horarioSeleccionado?.ocupado) {
-    alert('❌ El horario seleccionado ya fue ocupado. Elegí otro.');
+    alert('❌ El horario seleccionado no está disponible. Elegí otro.');
     renderizarCliente();
     return;
   }
@@ -1783,10 +2092,10 @@ function abrirModalCliente(id) {
             </div>
             <div class="dato-item"><span class="dato-label" style="font-size:0.7rem; text-transform:uppercase; color:var(--marron); font-weight:600;">Tamaño</span>
               <select id="modalTamano" style="width:100%; padding:10px 14px; border:2px solid var(--naranja-claro); border-radius:24px; background:white;">
-                <option value="chico" ${c.tamano === 'chico' ? 'selected' : ''}>Chico (1.5 hs)</option>
-                <option value="mediano" ${c.tamano === 'mediano' ? 'selected' : ''}>Mediano (2 hs)</option>
-                <option value="grande" ${c.tamano === 'grande' ? 'selected' : ''}>Grande (2.5 hs)</option>
-                <option value="extragrande" ${c.tamano === 'extragrande' ? 'selected' : ''}>Extragrande (4 hs)</option>
+                <option value="chico" ${c.tamano === 'chico' ? 'selected' : ''}>Chico (1 h)</option>
+                <option value="mediano" ${c.tamano === 'mediano' ? 'selected' : ''}>Mediano (2 h)</option>
+                <option value="grande" ${c.tamano === 'grande' ? 'selected' : ''}>Grande (3 h)</option>
+                <option value="extragrande" ${c.tamano === 'extragrande' ? 'selected' : ''}>Extragrande (3 h)</option>
               </select>
             </div>
           </div>
@@ -1895,37 +2204,6 @@ async function guardarModal() {
 }
 
 // ============================================================
-// ========== ADMIN: CALENDARIO ==========
-// ============================================================
-function renderizarCalendarioAdmin() {
-  const grid = document.getElementById("calendarGridAdmin");
-  if (!grid) return;
-  let fecha = new Date();
-  fecha.setDate(fecha.getDate() + semanaOffset * 7);
-  const inicio = new Date(fecha);
-  inicio.setDate(fecha.getDate() - fecha.getDay());
-  document.getElementById("semanaLabel").innerHTML = `${inicio.toLocaleDateString()} - ${new Date(inicio.getTime() + 6*86400000).toLocaleDateString()}`;
-  grid.innerHTML = "";
-  ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"].forEach(d => { grid.innerHTML += `<div class="calendar-day-header">${d}</div>`; });
-  for (let i = 0; i < 7; i++) {
-    let dia = new Date(inicio);
-    dia.setDate(inicio.getDate() + i);
-    let diaStr = dia.toISOString().slice(0,10);
-    let eventos = clientes.filter(c => c.fecha === diaStr);
-    let html = `<div class="calendar-day"><div class="calendar-day-number">${dia.getDate()}</div>`;
-    eventos.sort((a,b) => (a.hora || "10:00").localeCompare(b.hora || "10:00"));
-    eventos.forEach(e => { 
-      const info = TAMAÑOS[e.tamano] || TAMAÑOS['chico'];
-      html += `<div class="calendar-event" onclick="event.stopPropagation(); abrirModalCliente('${e.id}')"><strong>${e.hora || '10:00'}</strong> 🐕 ${e.mascota} (${info.nombre})</div>`; 
-    });
-    html += `</div>`;
-    grid.innerHTML += html;
-  }
-}
-
-function cambiarSemana(delta) { semanaOffset += delta; renderizarCalendarioAdmin(); }
-
-// ============================================================
 // ========== ADMIN: ESTADÍSTICAS ==========
 // ============================================================
 function renderizarEstadisticas() {
@@ -1972,60 +2250,6 @@ function enviarRecordatorioMasivo() {
   mostrarToast(`Enviando a ${selec.length} clientes`);
 }
 
-async function registrarClienteAdmin() {
-  let fecha = document.getElementById("fecha").value;
-  let hora = document.getElementById("hora").value;
-  let duenio = document.getElementById("duenio").value.trim();
-  let mascota = document.getElementById("mascota").value.trim();
-  if (!fecha || !duenio || !mascota) { alert("Completa fecha, dueño y mascota"); return; }
-  if (!hora) hora = "10:00";
-
-  const existing = clientes.find(c => c.duenio.toLowerCase() === duenio.toLowerCase() && c.mascota.toLowerCase() === mascota.toLowerCase());
-  
-  if (existing) {
-    if (!confirm(`${mascota} ya existe. ¿Actualizar fecha/hora?`)) return;
-    existing.fecha = fecha;
-    existing.hora = hora;
-    existing.raza = document.getElementById("raza").value;
-    existing.telefono = document.getElementById("telefono").value;
-    existing.tamano = document.getElementById("tamano")?.value || 'chico';
-    const guardado = await guardarTurnoFirestore(existing);
-    if (guardado) {
-      mostrarToast("Turno actualizado");
-      renderizarAdmin();
-      limpiarFormAdmin();
-    }
-    return;
-  }
-
-  const nuevoTurno = {
-    fecha: fecha,
-    hora: hora,
-    duenio: duenio,
-    mascota: mascota,
-    raza: document.getElementById("raza").value,
-    telefono: document.getElementById("telefono").value,
-    tamano: document.getElementById("tamano")?.value || 'chico',
-    observaciones: "",
-    fotos: []
-  };
-
-  const guardado = await guardarTurnoFirestore(nuevoTurno);
-  if (guardado) {
-    mostrarToast("Turno registrado");
-    limpiarFormAdmin();
-  }
-}
-
-function limpiarFormAdmin() {
-  document.getElementById("duenio").value = "";
-  document.getElementById("mascota").value = "";
-  document.getElementById("raza").value = "";
-  document.getElementById("telefono").value = "";
-  document.getElementById("fecha").value = new Date().toISOString().slice(0,10);
-  document.getElementById("hora").value = "10:00";
-}
-
 function actualizarContadores() { 
   document.getElementById("totalClientes").innerText = clientes.length; 
 }
@@ -2046,7 +2270,6 @@ function switchTab(tab, btn) {
   document.getElementById(`pane-${tab}`).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if (tab === 'calendario') renderizarCalendarioAdmin();
   if (tab === 'estadisticas') renderizarEstadisticas();
   if (tab === 'recordatorios') renderizarListaRecordatorios();
   if (tab === 'clientes') renderizarTabla();
@@ -2058,7 +2281,8 @@ function switchTab(tab, btn) {
 async function init() {
   await cargarTurnosFirestore();
   
-  document.getElementById("fecha").value = new Date().toISOString().slice(0,10);
+  const hoy = new Date().toISOString().slice(0,10);
+  document.getElementById('fechaAdmin').value = hoy;
   
   document.getElementById('clienteMode').classList.remove('oculto');
   document.getElementById('adminMode').classList.remove('visible');
@@ -2081,6 +2305,29 @@ async function init() {
   });
   
   mostrarToast('✅ Conectado a la nube');
+}
+
+function actualizarDuracionYHorarios() {
+    const select = document.getElementById('clienteTamano');
+    const duracionSpan = document.getElementById('clienteDuracion');
+    if (select && duracionSpan) {
+        const tamano = select.value;
+        clienteTamanoSeleccionado = tamano;
+        const info = TAMAÑOS[tamano];
+        duracionSpan.textContent = info.duracion / 60 + ' horas';
+        renderizarCliente();
+    }
+}
+
+function seleccionarDiaCliente(fecha) {
+    clienteSeleccionado.fecha = fecha;
+    clienteSeleccionado.hora = null;
+    renderizarCliente();
+}
+
+function seleccionarHoraCliente(hora) {
+    clienteSeleccionado.hora = hora;
+    renderizarCliente();
 }
 
 init();
