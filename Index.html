@@ -1,0 +1,2336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>🐾 Familia Animal | Petshop & Pelu Canina</title>
+<!-- Font Awesome 6 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- JSZip -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif; }
+  body { background: linear-gradient(145deg, #f5f0eb 0%, #e8e0d8 100%); padding: 20px; min-height: 100vh; }
+  .dashboard { max-width: 1400px; margin: 0 auto; }
+
+  :root {
+    --naranja-oscuro: #D4762B;
+    --naranja-medio: #E8923C;
+    --naranja-claro: #F5B56B;
+    --naranja-muy-claro: #FDE8D0;
+    --verde-oscuro: #2D7D4A;
+    --verde-medio: #4CAF50;
+    --verde-claro: #81C784;
+    --verde-muy-claro: #E8F5E9;
+    --beige: #F5EDE4;
+    --marron: #8B6B4A;
+  }
+
+  .hero { 
+    background: #ffffffdd; 
+    backdrop-filter: blur(8px); 
+    border-radius: 48px; 
+    padding: 18px 32px; 
+    margin-bottom: 28px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    flex-wrap: wrap; 
+    gap: 15px; 
+    border: 2px solid var(--naranja-claro);
+  }
+  .hero h2 { 
+    font-size: 1.4rem; 
+    font-weight: 700; 
+    color: var(--naranja-oscuro); 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+  }
+  .hero h2 .verde { color: var(--verde-oscuro); }
+  
+  .hero-botones {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .btn-backup {
+    background: var(--verde-oscuro);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 40px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+  }
+  .btn-backup:hover { background: var(--verde-medio); transform: scale(0.97); }
+  .btn-backup.restore { background: var(--naranja-oscuro); }
+  .btn-backup.restore:hover { background: var(--naranja-medio); }
+  
+  .badge-counter { 
+    background: var(--naranja-muy-claro); 
+    padding: 6px 14px; 
+    border-radius: 60px; 
+    font-size: 0.85rem; 
+    font-weight: 600; 
+    color: var(--naranja-oscuro); 
+  }
+  
+  .btn-toggle { 
+    background: var(--naranja-medio); 
+    border: none; 
+    padding: 10px 24px; 
+    border-radius: 40px; 
+    color: white; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; 
+  }
+  .btn-toggle:hover { transform: scale(0.98); background: var(--naranja-oscuro); }
+
+  .cliente-mode { display: block; }
+  .cliente-mode.oculto { display: none; }
+
+  .cliente-header { 
+    background: linear-gradient(135deg, var(--naranja-oscuro), var(--verde-oscuro)); 
+    padding: 40px 20px; 
+    border-radius: 48px; 
+    color: white; 
+    text-align: center; 
+    margin-bottom: 30px; 
+    box-shadow: 0 10px 30px rgba(212, 118, 43, 0.3);
+  }
+  .cliente-header h1 { 
+    font-size: 2.2rem; 
+    font-weight: 700; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 15px; 
+    flex-wrap: wrap;
+  }
+  .cliente-header h1 .petshop { color: #FFD54F; }
+  .cliente-header p { font-size: 1.1rem; opacity: 0.9; margin-top: 8px; }
+
+  .cliente-card { 
+    background: white; 
+    border-radius: 32px; 
+    padding: 30px; 
+    margin-bottom: 24px; 
+    box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); 
+    border-left: 5px solid var(--naranja-medio);
+  }
+  .cliente-card h2 { 
+    color: var(--naranja-oscuro); 
+    margin-bottom: 20px; 
+    font-size: 1.4rem; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+  }
+
+  .horarios-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin: 15px 0; }
+  .horario-btn { 
+    padding: 12px; 
+    border-radius: 16px; 
+    border: 2px solid var(--naranja-claro); 
+    background: var(--beige); 
+    cursor: pointer; 
+    transition: 0.2s; 
+    text-align: center; 
+    font-weight: 600; 
+  }
+  .horario-btn:hover:not(.ocupado):not(.seleccionado) { 
+    border-color: var(--naranja-medio); 
+    background: var(--naranja-muy-claro); 
+  }
+  .horario-btn.ocupado { 
+    background: #f5f5f5; 
+    border-color: #ddd; 
+    color: #999; 
+    cursor: not-allowed; 
+    opacity: 0.6; 
+  }
+  .horario-btn.seleccionado { 
+    background: var(--naranja-medio); 
+    border-color: var(--naranja-oscuro); 
+    color: white; 
+  }
+  .horario-btn .hora { font-size: 1.1rem; }
+  .horario-btn .estado { font-size: 0.65rem; display: block; margin-top: 4px; }
+
+  .form-cliente input, .form-cliente textarea, .form-cliente select { 
+    width: 100%; 
+    padding: 14px 18px; 
+    border: 2px solid var(--naranja-claro); 
+    border-radius: 24px; 
+    margin-top: 6px; 
+    font-size: 0.95rem; 
+    transition: 0.3s;
+    background: #fefcf9;
+  }
+  .form-cliente select { appearance: auto; }
+  .form-cliente input:focus, .form-cliente textarea:focus, .form-cliente select:focus { 
+    border-color: var(--naranja-medio); 
+    outline: none; 
+    box-shadow: 0 0 0 3px rgba(232, 146, 60, 0.2);
+  }
+  .form-cliente .btn-confirmar { 
+    background: var(--verde-medio); 
+    color: white; 
+    border: none; 
+    padding: 14px 30px; 
+    border-radius: 40px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    font-size: 1.1rem; 
+    width: 100%; 
+    transition: 0.2s; 
+  }
+  .form-cliente .btn-confirmar:hover { 
+    background: var(--verde-oscuro); 
+    transform: scale(0.98); 
+  }
+
+  .calendario-dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 20px; }
+  .dia-btn { 
+    padding: 12px 8px; 
+    border-radius: 16px; 
+    border: 2px solid var(--naranja-claro); 
+    background: var(--beige); 
+    cursor: pointer; 
+    text-align: center; 
+    transition: 0.2s; 
+  }
+  .dia-btn:hover:not(.seleccionado) { 
+    border-color: var(--naranja-medio); 
+    background: var(--naranja-muy-claro); 
+  }
+  .dia-btn.seleccionado { 
+    background: var(--naranja-medio); 
+    border-color: var(--naranja-oscuro); 
+    color: white; 
+  }
+  .dia-btn .dia-num { font-size: 1.3rem; font-weight: 700; }
+  .dia-btn .dia-nom { font-size: 0.7rem; opacity: 0.7; }
+
+  .admin-mode { display: none; }
+  .admin-mode.visible { display: block; }
+
+  .tabs { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+  .tab-btn { 
+    background: #ffffffcc; 
+    border: 2px solid var(--naranja-claro); 
+    padding: 12px 28px; 
+    border-radius: 50px; 
+    font-weight: 600; 
+    color: var(--marron); 
+    cursor: pointer; 
+    transition: all 0.2s; 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+  }
+  .tab-btn.active { 
+    background: var(--naranja-medio); 
+    border-color: var(--naranja-oscuro); 
+    color: white; 
+  }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  .form-card { 
+    background: #ffffff; 
+    border-radius: 32px; 
+    padding: 24px 28px; 
+    margin-bottom: 28px; 
+    box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); 
+    border-left: 5px solid var(--verde-medio);
+  }
+  .form-title { 
+    font-size: 1.3rem; 
+    font-weight: 600; 
+    margin-bottom: 20px; 
+    color: var(--naranja-oscuro); 
+    border-left: 5px solid var(--naranja-medio); 
+    padding-left: 16px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    flex-wrap: wrap; 
+    gap: 15px; 
+  }
+  .search-box { display: flex; gap: 10px; align-items: center; }
+  .search-box input { 
+    padding: 10px 16px; 
+    border-radius: 30px; 
+    border: 2px solid var(--naranja-claro); 
+    width: 250px; 
+    font-size: 0.9rem; 
+  }
+  .search-box input:focus { border-color: var(--naranja-medio); outline: none; }
+  .search-box button { 
+    background: var(--naranja-medio); 
+    border: none; 
+    padding: 10px 20px; 
+    border-radius: 30px; 
+    color: white; 
+    cursor: pointer; 
+    font-weight: 600;
+  }
+  .search-box button:hover { background: var(--naranja-oscuro); }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { 
+    font-size: 0.7rem; 
+    font-weight: 600; 
+    text-transform: uppercase; 
+    color: var(--marron); 
+  }
+  .input-group input, .input-group select { 
+    background: var(--beige); 
+    border: 2px solid var(--naranja-claro); 
+    border-radius: 24px; 
+    padding: 10px 14px; 
+    transition: 0.3s;
+  }
+  .input-group input:focus, .input-group select:focus { 
+    border-color: var(--naranja-medio); 
+    outline: none; 
+    box-shadow: 0 0 0 3px rgba(232, 146, 60, 0.2);
+  }
+  .btn-primary { 
+    background: linear-gradient(95deg, var(--naranja-medio), var(--naranja-oscuro)); 
+    border: none; 
+    padding: 12px; 
+    border-radius: 40px; 
+    font-weight: 700; 
+    color: white; 
+    cursor: pointer; 
+    width: 100%; 
+    transition: 0.3s;
+  }
+  .btn-primary:hover { transform: scale(0.98); opacity: 0.9; }
+
+  .quick-filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-chip { 
+    background: var(--beige); 
+    border: 2px solid var(--naranja-claro); 
+    padding: 8px 20px; 
+    border-radius: 30px; 
+    cursor: pointer; 
+    font-weight: 500; 
+    transition: 0.2s;
+  }
+  .filter-chip:hover { 
+    border-color: var(--naranja-medio); 
+    background: var(--naranja-muy-claro); 
+  }
+
+  .table-wrapper { 
+    background: white; 
+    border-radius: 24px; 
+    overflow-x: auto; 
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08); 
+    border: 2px solid var(--naranja-claro);
+  }
+  .tabla { width: 100%; border-collapse: collapse; min-width: 1000px; }
+  .tabla th { 
+    background: var(--naranja-muy-claro); 
+    color: var(--naranja-oscuro); 
+    padding: 14px 12px; 
+    text-align: center; 
+    border-bottom: 2px solid var(--naranja-claro); 
+  }
+  .tabla td { padding: 12px; text-align: center; border-bottom: 1px solid #eee; }
+  .tabla tr { cursor: pointer; transition: 0.2s; }
+  .tabla tr:hover { background: var(--naranja-muy-claro) !important; }
+  .verde td { background: var(--verde-muy-claro); }
+  .amarillo td { background: #FFF8E1; }
+  .rojo td { background: #FFEBEE; }
+  .azul td { background: #E3F2FD; }
+
+  /* ===== CALENDARIO GRANDE ===== */
+  .calendar-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 20px; 
+    background: white; 
+    padding: 15px 20px; 
+    border-radius: 40px; 
+    border: 2px solid var(--naranja-claro);
+  }
+  .calendar-header button { 
+    background: var(--naranja-medio); 
+    border: none; 
+    padding: 10px 20px; 
+    border-radius: 30px; 
+    color: white; 
+    cursor: pointer; 
+    font-weight: 600;
+  }
+  .calendar-header button:hover { background: var(--naranja-oscuro); }
+  .calendar-grid { 
+    display: grid; 
+    grid-template-columns: repeat(7, 1fr); 
+    gap: 12px; 
+    background: white; 
+    border-radius: 24px; 
+    padding: 24px; 
+    border: 2px solid var(--naranja-claro);
+  }
+  .calendar-day-header { 
+    text-align: center; 
+    font-weight: 700; 
+    color: var(--naranja-oscuro); 
+    padding: 12px 0; 
+    font-size: 0.9rem;
+  }
+  .calendar-day { 
+    background: var(--beige); 
+    border-radius: 16px; 
+    padding: 14px 10px; 
+    min-height: 300px; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    border: 2px solid var(--naranja-claro); 
+    overflow-y: auto; 
+  }
+  .calendar-day:hover { 
+    background: var(--naranja-muy-claro); 
+    border-color: var(--naranja-medio); 
+  }
+  .calendar-day-number { 
+    font-weight: 700; 
+    margin-bottom: 10px; 
+    color: var(--marron); 
+    font-size: 1.1rem;
+  }
+  .calendar-event { 
+    background: var(--verde-muy-claro); 
+    border-radius: 12px; 
+    padding: 6px 8px; 
+    margin-top: 6px; 
+    font-size: 0.8rem; 
+    cursor: pointer; 
+    border-left: 3px solid var(--verde-medio);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .calendar-event strong { 
+    color: var(--verde-oscuro); 
+    font-weight: 700;
+  }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+  .stat-card { 
+    background: white; 
+    border-radius: 24px; 
+    padding: 20px; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08); 
+    border-left: 5px solid var(--naranja-medio);
+  }
+  .stat-card h4 { color: var(--naranja-oscuro); margin-bottom: 10px; font-size: 0.9rem; }
+  .stat-number { font-size: 2rem; font-weight: 700; color: var(--verde-oscuro); }
+  canvas { max-height: 250px; }
+
+  .modal-overlay { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.7); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    z-index: 1000; 
+  }
+  .modal-container { 
+    background: white; 
+    border-radius: 32px; 
+    width: 90%; 
+    max-width: 700px; 
+    max-height: 85vh; 
+    overflow-y: auto; 
+    border: 3px solid var(--naranja-medio);
+  }
+  .modal-header { 
+    background: linear-gradient(95deg, var(--naranja-medio), var(--naranja-oscuro)); 
+    padding: 20px; 
+    border-radius: 32px 32px 0 0; 
+    color: white; 
+    display: flex; 
+    justify-content: space-between; 
+  }
+  .modal-close { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; }
+  .modal-body { padding: 24px; }
+  .modal-footer { 
+    padding: 20px; 
+    background: var(--beige); 
+    border-radius: 0 0 32px 32px; 
+    display: flex; 
+    justify-content: flex-end; 
+    gap: 12px; 
+    flex-wrap: wrap; 
+  }
+  .modal-btn { 
+    padding: 10px 24px; 
+    border-radius: 40px; 
+    border: none; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: 0.2s;
+  }
+  .modal-btn-guardar { background: var(--verde-medio); color: white; }
+  .modal-btn-guardar:hover { background: var(--verde-oscuro); }
+  .modal-btn-cerrar { background: #ccc; color: #333; }
+  .modal-btn-cerrar:hover { background: #bbb; }
+  .modal-btn-wsp { background: #25D366; color: white; }
+  .modal-btn-wsp:hover { background: #1da85c; }
+
+  .recordatorio-panel { 
+    background: white; 
+    border-radius: 24px; 
+    padding: 20px; 
+    border: 2px solid var(--naranja-claro);
+  }
+  .clientes-lista { 
+    max-height: 300px; 
+    overflow-y: auto; 
+    margin: 15px 0; 
+    border: 2px solid var(--naranja-claro); 
+    border-radius: 16px; 
+    padding: 10px; 
+  }
+  .cliente-check { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    padding: 8px; 
+    border-bottom: 1px solid #eee; 
+  }
+  .btn-masivo { 
+    background: #25D366; 
+    color: white; 
+    border: none; 
+    padding: 12px 24px; 
+    border-radius: 40px; 
+    cursor: pointer; 
+    font-weight: 600; 
+    transition: 0.2s;
+  }
+  .btn-masivo:hover { background: #1da85c; }
+
+  .fotos-grid { display: flex; gap: 15px; flex-wrap: wrap; }
+  .foto-item { 
+    position: relative; 
+    width: 100px; 
+    border: 2px solid var(--naranja-claro); 
+    border-radius: 16px; 
+    overflow: hidden; 
+    cursor: pointer; 
+    transition: 0.2s;
+  }
+  .foto-item:hover { transform: scale(1.05); }
+  .foto-item img { width: 100%; height: 80px; object-fit: cover; }
+  .foto-item .delete-foto { 
+    position: absolute; 
+    top: 5px; 
+    right: 5px; 
+    background: rgba(0,0,0,0.6); 
+    color: white; 
+    border: none; 
+    border-radius: 50%; 
+    width: 20px; 
+    height: 20px; 
+    cursor: pointer; 
+    font-size: 10px; 
+  }
+  .btn-agregar-foto { 
+    background: var(--beige); 
+    border: 2px dashed var(--naranja-claro); 
+    border-radius: 16px; 
+    width: 100px; 
+    height: 80px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    cursor: pointer; 
+    color: var(--naranja-medio); 
+    transition: 0.2s;
+  }
+  .btn-agregar-foto:hover { background: var(--naranja-muy-claro); }
+
+  .foto-ampliada-overlay { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.9); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    z-index: 2000; 
+    cursor: pointer; 
+  }
+  .foto-ampliada-container img { 
+    max-width: 90%; 
+    max-height: 90vh; 
+    border-radius: 16px; 
+  }
+
+  .toast-msg { 
+    position: fixed; 
+    bottom: 20px; 
+    right: 20px; 
+    background: var(--verde-oscuro); 
+    color: white; 
+    padding: 12px 24px; 
+    border-radius: 50px; 
+    z-index: 2000; 
+    animation: fadeInOut 2.5s ease; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+  @keyframes fadeInOut { 
+    0%{opacity:0; transform:translateY(20px);} 
+    15%{opacity:1; transform:translateY(0);} 
+    85%{opacity:1; transform:translateY(0);} 
+    100%{opacity:0; transform:translateY(20px);} 
+  }
+
+  .confirm-modal { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.5); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    z-index: 1500; 
+  }
+  .confirm-content { 
+    background: white; 
+    border-radius: 32px; 
+    padding: 30px; 
+    max-width: 400px; 
+    text-align: center; 
+    border: 3px solid var(--naranja-medio);
+  }
+  .confirm-content h3 { color: var(--naranja-oscuro); }
+  .confirm-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+  .cargando { text-align: center; padding: 40px; color: var(--marron); }
+
+  .password-modal { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: rgba(0,0,0,0.8); 
+    display: none;
+    align-items: center; 
+    justify-content: center; 
+    z-index: 3000; 
+    backdrop-filter: blur(5px);
+  }
+  .password-modal.visible { display: flex; }
+  
+  .password-box { 
+    background: white; 
+    border-radius: 32px; 
+    padding: 40px; 
+    max-width: 400px; 
+    width: 90%; 
+    text-align: center; 
+    border: 3px solid var(--naranja-medio);
+  }
+  .password-box h3 { color: var(--naranja-oscuro); margin-bottom: 10px; }
+  .password-box p { color: var(--marron); margin-bottom: 20px; }
+  .password-box input { 
+    width: 100%; 
+    padding: 14px; 
+    border: 2px solid var(--naranja-claro); 
+    border-radius: 24px; 
+    font-size: 1rem; 
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  .password-box input:focus { border-color: var(--naranja-medio); outline: none; }
+  .password-box .btn-entrar { 
+    background: var(--naranja-medio); 
+    color: white; 
+    border: none; 
+    padding: 12px 30px; 
+    border-radius: 40px; 
+    font-weight: 700; 
+    cursor: pointer; 
+    width: 100%; 
+    font-size: 1rem;
+  }
+  .password-box .btn-entrar:hover { background: var(--naranja-oscuro); }
+  .password-box .error { color: #c0392b; font-size: 0.85rem; margin-top: 10px; display: none; }
+
+  .recordatorio-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 4000;
+    backdrop-filter: blur(5px);
+  }
+  .recordatorio-modal.visible { display: flex; }
+  .recordatorio-box {
+    background: white;
+    border-radius: 32px;
+    padding: 40px;
+    max-width: 450px;
+    width: 90%;
+    text-align: center;
+    border: 3px solid var(--naranja-medio);
+  }
+  .recordatorio-box h3 {
+    color: var(--naranja-oscuro);
+    margin-bottom: 15px;
+  }
+  .recordatorio-box p {
+    color: var(--marron);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .recordatorio-box .btn-recordatorio {
+    background: var(--verde-medio);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 40px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: 0.2s;
+  }
+  .recordatorio-box .btn-recordatorio:hover {
+    background: var(--verde-oscuro);
+    transform: scale(0.97);
+  }
+
+  .badge-tamano {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .badge-chico { background: #81C784; color: #1e4620; }
+  .badge-mediano { background: #FFD54F; color: #7d5a00; }
+  .badge-grande { background: #FF8A65; color: #7a2e00; }
+  .badge-extragrande { background: #EF5350; color: white; }
+
+  /* ===== HORARIOS DEL DÍA EN ADMIN ===== */
+  .horarios-dia-admin {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 15px 0;
+    padding: 15px;
+    background: white;
+    border-radius: 16px;
+    border: 2px solid var(--naranja-claro);
+    min-height: 70px;
+    align-items: center;
+    justify-content: center;
+  }
+  .horario-oval {
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 3px solid transparent;
+    text-align: center;
+    min-width: 70px;
+  }
+  .horario-oval:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .horario-oval.disponible {
+    background: var(--verde-muy-claro);
+    border-color: var(--verde-medio);
+    color: var(--verde-oscuro);
+  }
+  .horario-oval.disponible:hover {
+    background: #c8e6c9;
+  }
+  .horario-oval.ocupado {
+    background: #ffebee;
+    border-color: #c7362b;
+    color: #b02b20;
+    cursor: pointer;
+  }
+  .horario-oval.ocupado:hover {
+    background: #ffcdd2;
+  }
+  .horario-oval .hora { font-size: 0.9rem; }
+  .horario-oval .estado { font-size: 0.55rem; opacity: 0.7; }
+  .horario-oval.seleccionado {
+    border-color: var(--naranja-oscuro);
+    box-shadow: 0 0 0 3px var(--naranja-muy-claro);
+  }
+
+  .form-carga-rapida {
+    background: var(--verde-muy-claro);
+    padding: 15px 20px;
+    border-radius: 16px;
+    border: 2px solid var(--verde-medio);
+    margin: 15px 0;
+  }
+  .form-carga-rapida .form-grid { 
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+    gap: 10px;
+  }
+
+  @media (max-width: 600px) {
+    .cliente-header h1 { font-size: 1.8rem; }
+    .cliente-header { padding: 30px 15px; }
+    .cliente-card { padding: 20px; }
+    .horarios-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    .calendario-dias { gap: 6px; }
+    .dia-btn { padding: 8px 4px; }
+    .dia-btn .dia-num { font-size: 1rem; }
+    .hero h2 { font-size: 1.2rem; }
+    .hero { padding: 12px 18px; }
+    .search-box input { width: 150px; }
+    .btn-backup { font-size: 0.7rem; padding: 6px 12px; }
+    .horario-oval { min-width: 60px; padding: 6px 12px; font-size: 0.7rem; }
+    .horario-oval .hora { font-size: 0.8rem; }
+    .calendar-day { min-height: 150px; }
+    .calendar-grid { padding: 12px; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <div class="hero">
+    <h2>
+      <i class="fas fa-paw" style="color: var(--naranja-oscuro);"></i> 
+      Familia Animal 
+      <span class="verde">Petshop & Pelu Canina</span>
+    </h2>
+    <div class="hero-botones">
+      <div id="backupButtons">
+        <button class="btn-backup" onclick="descargarBackup()"><i class="fas fa-download"></i> Backup</button>
+        <button class="btn-backup restore" onclick="document.getElementById('restoreInput').click()"><i class="fas fa-upload"></i> Restaurar</button>
+        <input type="file" id="restoreInput" accept=".zip" style="display:none" onchange="restaurarBackup(event)">
+      </div>
+      <span class="badge-counter" id="statusCloud"><i class="fas fa-cloud"></i> <span id="totalClientes">0</span> turnos</span>
+      <button class="btn-toggle" id="btnToggleModo" onclick="toggleModo()">
+        <i class="fas fa-user-cog"></i> Modo Admin
+      </button>
+    </div>
+  </div>
+
+  <div class="cliente-mode" id="clienteMode">
+    <div class="cliente-header">
+      <h1>
+        <i class="fas fa-paw"></i> 
+        <span class="petshop">Familia Animal</span>
+        <span style="font-size:1.4rem;">🐾</span>
+      </h1>
+      <p>Petshop & Peluquería Canina · Reservá tu turno online</p>
+    </div>
+    <div id="clienteContent">
+      <div class="cargando"><i class="fas fa-spinner fa-spin"></i> Cargando turnos disponibles...</div>
+    </div>
+  </div>
+
+  <div class="admin-mode" id="adminMode">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('clientes', this)"><i class="fas fa-users"></i> Turnos</button>
+      <button class="tab-btn" onclick="switchTab('estadisticas', this)"><i class="fas fa-chart-bar"></i> Estadísticas</button>
+      <button class="tab-btn" onclick="switchTab('recordatorios', this)"><i class="fas fa-bell"></i> Recordatorios</button>
+    </div>
+
+    <div id="pane-clientes" class="tab-pane active">
+      <div class="form-card">
+        <div class="form-title">
+          <span><i class="fas fa-calendar-alt"></i> Calendario de Turnos</span>
+          <div class="search-box">
+            <input type="text" id="buscarCliente" placeholder="Buscar dueño o mascota..." onkeyup="buscarCliente()">
+            <button onclick="buscarCliente()"><i class="fas fa-search"></i> Buscar</button>
+            <button onclick="limpiarBusqueda()" style="background:#b0a9a1;"><i class="fas fa-times"></i> Limpiar</button>
+          </div>
+        </div>
+
+        <!-- ===== CALENDARIO ===== -->
+        <div class="calendar-header">
+          <button onclick="cambiarSemanaAdmin(-1)"><i class="fas fa-chevron-left"></i> Anterior</button>
+          <h3 id="semanaLabelAdmin"></h3>
+          <button onclick="cambiarSemanaAdmin(1)">Siguiente <i class="fas fa-chevron-right"></i></button>
+        </div>
+        <div class="calendar-grid" id="calendarGridAdmin"></div>
+        <div style="font-size:0.65rem; color:#888; text-align:center; margin-top:8px;">
+          <span style="display:inline-block; width:14px; height:14px; background:#ffebee; border-radius:4px; vertical-align:middle; margin-right:4px; border:1px solid #c7362b;"></span> Completo
+          <span style="display:inline-block; width:14px; height:14px; background:var(--verde-muy-claro); border-radius:4px; vertical-align:middle; margin:0 4px 0 12px; border:1px solid var(--verde-medio);"></span> Disponible
+          <span style="display:inline-block; width:14px; height:14px; background:var(--naranja-muy-claro); border-radius:4px; vertical-align:middle; margin:0 4px 0 12px; border:1px solid var(--naranja-medio);"></span> Hoy
+          <span style="display:inline-block; width:14px; height:14px; background:#e3f2fd; border-radius:4px; vertical-align:middle; margin:0 4px 0 12px; border:1px solid #2196f3;"></span> Seleccionado
+        </div>
+
+        <!-- ===== HORARIOS DEL DÍA SELECCIONADO ===== -->
+        <div style="margin-top: 20px;">
+          <label style="font-size:0.9rem; font-weight:600; color: var(--marron);">
+            <i class="fas fa-clock"></i> Horarios del día <span id="fechaSeleccionadaLabel">(seleccioná un día)</span>
+          </label>
+          <div class="horarios-dia-admin" id="horariosDiaAdmin">
+            <span style="color:#888;">Hacé click en un día del calendario para ver los horarios</span>
+          </div>
+        </div>
+
+        <!-- ===== FORMULARIO DE CARGA RÁPIDA ===== -->
+        <div id="formularioCargaRapida" style="display:none;">
+          <div class="form-carga-rapida">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <span style="font-weight: 700; color: var(--verde-oscuro);">
+                <i class="fas fa-plus-circle"></i> Cargando turno para <span id="fechaCargaLabel"></span> a las <span id="horaCargaLabel"></span>
+              </span>
+              <button style="background: #ccc; border: none; padding: 6px 16px; border-radius: 30px; cursor: pointer; font-weight: 600;" onclick="cancelarCargaTurno()">
+                <i class="fas fa-times"></i> Cancelar
+              </button>
+            </div>
+            <div class="form-grid" style="margin-top: 12px;">
+              <div class="input-group"><label>📅 Fecha</label><input type="date" id="fechaAdmin" readonly style="background:#f5f5f5;"></div>
+              <div class="input-group"><label>⏰ Hora</label><input type="text" id="horaAdmin" readonly style="background:#f5f5f5;"></div>
+              <div class="input-group"><label>👤 Dueño *</label><input type="text" id="duenioAdmin" placeholder="Nombre"></div>
+              <div class="input-group"><label>🐶 Mascota *</label><input type="text" id="mascotaAdmin" placeholder="Mascota"></div>
+              <div class="input-group"><label>🐕 Raza</label><input type="text" id="razaAdmin" placeholder="Raza"></div>
+              <div class="input-group"><label>📱 Teléfono</label><input type="text" id="telefonoAdmin" placeholder="549..."></div>
+              <div class="input-group"><label>📏 Tamaño</label>
+                <select id="tamanoAdmin">
+                  <option value="chico">🐕 Chico (1h) - $35.000</option>
+                  <option value="mediano">🐕 Mediano (2h) - $40.000</option>
+                  <option value="grande">🐕 Grande (3h) - $60.000</option>
+                  <option value="extragrande">🐕 Extragrande (3h) - $80.000</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn-primary" onclick="guardarTurnoDesdeAdmin()" style="width: auto; padding: 10px 30px; margin-top: 8px;">
+              <i class="fas fa-save"></i> Guardar turno
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrapper" style="margin-top: 20px;">
+          <table class="tabla">
+            <thead><tr><th>Dueño</th><th>Mascota</th><th>Raza</th><th>Tamaño</th><th>Teléfono</th><th>Fecha</th><th>Hora</th><th>Duración</th><th>Estado</th><th>📎</th><th>Acciones</th></tr></thead>
+            <tbody id="tablaClientes"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="pane-estadisticas" class="tab-pane">
+      <div class="stats-grid">
+        <div class="stat-card"><h4><i class="fas fa-users"></i> Clientes</h4><div class="stat-number" id="statTotal">0</div></div>
+        <div class="stat-card"><h4><i class="fas fa-calendar-check"></i> Turnos futuros</h4><div class="stat-number" id="statFuturos">0</div></div>
+        <div class="stat-card"><h4><i class="fas fa-hourglass-half"></i> Por vencer (7d)</h4><div class="stat-number" id="statPorVencer">0</div></div>
+        <div class="stat-card"><h4><i class="fas fa-exclamation-triangle"></i> Vencidos</h4><div class="stat-number" id="statVencidos">0</div></div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><h4><i class="fas fa-chart-line"></i> Razas más comunes</h4><canvas id="razasChart"></canvas></div>
+        <div class="stat-card"><h4><i class="fas fa-chart-pie"></i> Estado de clientes</h4><canvas id="estadoChart"></canvas></div>
+      </div>
+    </div>
+
+    <div id="pane-recordatorios" class="tab-pane">
+      <div class="recordatorio-panel">
+        <h3 style="color: var(--naranja-oscuro);"><i class="fas fa-bell"></i> Enviar recordatorio masivo</h3>
+        <p style="color: var(--marron);">Selecciona los clientes que vencen pronto (próximos 7 días)</p>
+        <div class="clientes-lista" id="listaRecordatorios"></div>
+        <button class="btn-masivo" onclick="enviarRecordatorioMasivo()"><i class="fab fa-whatsapp"></i> Enviar a seleccionados</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="password-modal" id="passwordModal">
+  <div class="password-box">
+    <h3><i class="fas fa-lock" style="color: var(--naranja-oscuro);"></i> Acceso Administrador</h3>
+    <p>Ingresá la contraseña para acceder al panel de gestión</p>
+    <input type="password" id="passwordInput" placeholder="Contraseña..." onkeydown="if(event.key==='Enter') verificarPassword()">
+    <button class="btn-entrar" onclick="verificarPassword()"><i class="fas fa-sign-in-alt"></i> Entrar</button>
+    <div class="error" id="passwordError">❌ Contraseña incorrecta. Intentá de nuevo.</div>
+  </div>
+</div>
+
+<div class="recordatorio-modal" id="modalRecordatorio">
+  <div class="recordatorio-box">
+    <i class="fas fa-info-circle" style="font-size: 48px; color: var(--naranja-oscuro); margin-bottom: 15px;"></i>
+    <h3>⚠️ Importante</h3>
+    <p>
+      Recordá respetar el turno agendado.<br><br>
+      Si no podés asistir, por favor avisanos con anticipación para poder reasignar el horario.<br><br>
+      ¡Gracias por confiar en nosotros! 🐾
+    </p>
+    <button class="btn-recordatorio" id="btnContinuarRecordatorio">Entendido, continuar</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// ===== CONFIGURACIÓN =====
+// ============================================================
+const firebaseConfig = {
+    apiKey: "AIzaSyBYLsAV2DjRZD3dNeQYd7McngRguBP3LsE",
+    authDomain: "familiaanimalturnos.firebaseapp.com",
+    projectId: "familiaanimalturnos",
+    storageBucket: "familiaanimalturnos.firebasestorage.app",
+    messagingSenderId: "523162238241",
+    appId: "1:523162238241:web:32d79a72ec101198285260"
+};
+
+const CONTRASEÑA_ADMIN = "familia2026";
+const COLECCION = 'turnos';
+const PELUQUEROS_POR_TURNO = 1;
+const HORA_CIERRE = '20:30';
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ============================================================
+// ===== TAMAÑOS Y DURACIONES (CORREGIDO) =====
+// ============================================================
+const TAMAÑOS = {
+    'chico': { nombre: '🐕 Chico', duracion: 60, precio: 35000, badge: 'badge-chico' },
+    'mediano': { nombre: '🐕 Mediano', duracion: 120, precio: 40000, badge: 'badge-mediano' },
+    'grande': { nombre: '🐕 Grande', duracion: 180, precio: 60000, badge: 'badge-grande' },
+    'extragrande': { nombre: '🐕 Extragrande', duracion: 180, precio: 80000, badge: 'badge-extragrande' }
+};
+
+const HORARIOS_BASE = ['09:30', '10:00', '10:30', '11:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
+
+// ============================================================
+// ===== VARIABLES GLOBALES =====
+// ============================================================
+let clientes = [];
+let filtroActual = 'todos';
+let semanaOffsetAdmin = 0;
+let razasChart, estadoChart;
+let clienteModalActual = null;
+let fotosTemporales = [];
+let modoActual = 'cliente';
+let clienteSeleccionado = { fecha: null, hora: null };
+let datosCargados = false;
+let callbackWhatsApp = null;
+let clienteTamanoSeleccionado = 'chico';
+let fechaSeleccionadaAdmin = null;
+let horaSeleccionadaAdmin = null;
+
+// ============================================================
+// ===== FUNCIONES DE FECHA =====
+// ============================================================
+function formatearFechaLocal(fechaStr) {
+  if (!fechaStr) return "";
+  const partes = fechaStr.split('-');
+  return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+function esFechaFuturaLocal(fechaStr) {
+  if (!fechaStr) return false;
+  const hoy = new Date();
+  const hoyStr = hoy.toISOString().slice(0,10);
+  return fechaStr > hoyStr;
+}
+
+function diasRestantesLocal(fechaUltima) {
+  if (!fechaUltima || esFechaFuturaLocal(fechaUltima)) return 999;
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  const partes = fechaUltima.split('-');
+  const ultima = new Date(partes[0], partes[1]-1, partes[2]);
+  ultima.setHours(0,0,0,0);
+  const vencimiento = new Date(ultima);
+  vencimiento.setDate(ultima.getDate() + 30);
+  return Math.ceil((vencimiento - hoy) / (1000*60*60*24));
+}
+
+function obtenerEstadoCliente(cliente) {
+  if (esFechaFuturaLocal(cliente.fecha)) return "futuro";
+  let d = diasRestantesLocal(cliente.fecha);
+  if (d <= 0) return "vencido";
+  if (d <= 7) return "proximo";
+  return "normal";
+}
+
+// ============================================================
+// ===== FUNCIONES DE TIEMPO =====
+// ============================================================
+function sumarMinutos(horaStr, minutos) {
+    const [h, m] = horaStr.split(':').map(Number);
+    const total = h * 60 + m + minutos;
+    const hh = Math.floor(total / 60);
+    const mm = total % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
+function compararHoras(h1, h2) {
+    const [h1h, h1m] = h1.split(':').map(Number);
+    const [h2h, h2m] = h2.split(':').map(Number);
+    return h1h * 60 + h1m - (h2h * 60 + h2m);
+}
+
+function obtenerHoraMinimaReserva() {
+    const ahora = new Date();
+    ahora.setMinutes(ahora.getMinutes() + 120);
+    const horas = String(ahora.getHours()).padStart(2, '0');
+    const minutos = String(ahora.getMinutes()).padStart(2, '0');
+    return `${horas}:${minutos}`;
+}
+
+// ============================================================
+// ===== OBTENER HORARIOS DISPONIBLES =====
+// ============================================================
+function obtenerHorariosDisponibles(fecha, duracionMinutos = 60) {
+    const turnosDia = clientes.filter(c => c.fecha === fecha);
+
+    const hoy = new Date().toISOString().slice(0,10);
+    const horaMinima = fecha === hoy ? obtenerHoraMinimaReserva() : '00:00';
+
+    return HORARIOS_BASE.map(hora => {
+        const horaFin = sumarMinutos(hora, duracionMinutos);
+        let ocupado = false;
+        let motivo = '';
+
+        if (fecha === hoy && compararHoras(hora, horaMinima) < 0) {
+            ocupado = true;
+            motivo = '⏳ 2hs de anticipación';
+            return { hora, ocupado, motivo };
+        }
+
+        if (compararHoras(horaFin, HORA_CIERRE) > 0) {
+            ocupado = true;
+            motivo = '❌ No alcanza';
+            return { hora, ocupado, motivo };
+        }
+
+        for (const c of turnosDia) {
+            const duracion = TAMAÑOS[c.tamano]?.duracion || 60;
+            const inicio = c.hora || '09:30';
+            const fin = sumarMinutos(inicio, duracion);
+            
+            if (compararHoras(hora, fin) < 0 && compararHoras(horaFin, inicio) > 0) {
+                ocupado = true;
+                motivo = `❌ Ocupado`;
+                return { hora, ocupado, motivo };
+            }
+        }
+
+        ocupado = false;
+        motivo = '✅ Disponible';
+
+        return { hora, ocupado, motivo };
+    });
+}
+
+// ============================================================
+// ===== OBTENER DÍAS DISPONIBLES =====
+// ============================================================
+function obtenerDiasDisponibles() {
+    const dias = [];
+    const hoy = new Date();
+    const capacidadTotal = PELUQUEROS_POR_TURNO * HORARIOS_BASE.length;
+
+    for (let i = 0; i < 14; i++) {
+        const dia = new Date(hoy);
+        dia.setDate(hoy.getDate() + i);
+        const diaStr = dia.toISOString().slice(0,10);
+        const turnosDia = clientes.filter(c => c.fecha === diaStr);
+        
+        let tiempoOcupado = 0;
+        turnosDia.forEach(c => {
+            tiempoOcupado += TAMAÑOS[c.tamano]?.duracion || 60;
+        });
+
+        const disponible = turnosDia.length < capacidadTotal;
+
+        dias.push({
+            fecha: diaStr,
+            dia: dia.getDate(),
+            mes: dia.getMonth() + 1,
+            diaSemana: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dia.getDay()],
+            turnos: turnosDia.length,
+            tiempoOcupado: tiempoOcupado,
+            disponible: disponible
+        });
+    }
+    return dias;
+}
+
+// ============================================================
+// ========== FIRESTORE ==========
+// ============================================================
+async function cargarTurnosFirestore() {
+  try {
+    const snapshot = await db.collection(COLECCION).get();
+    clientes = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      clientes.push({
+        id: doc.id,
+        ...data,
+        fotos: data.fotos || []
+      });
+    });
+    console.log('📥 Turnos cargados:', clientes.length);
+    datosCargados = true;
+    return true;
+  } catch (error) {
+    console.error('❌ Error al cargar:', error);
+    mostrarToast('❌ Error al cargar turnos', true);
+    return false;
+  }
+}
+
+async function guardarTurnoFirestore(turno) {
+  try {
+    if (turno.id && typeof turno.id === 'string') {
+      await db.collection(COLECCION).doc(turno.id).set({
+        fecha: turno.fecha,
+        hora: turno.hora,
+        duenio: turno.duenio,
+        mascota: turno.mascota,
+        raza: turno.raza || '',
+        telefono: turno.telefono || '',
+        tamano: turno.tamano || 'chico',
+        observaciones: turno.observaciones || '',
+        fotos: turno.fotos || []
+      });
+    } else {
+      const docRef = await db.collection(COLECCION).add({
+        fecha: turno.fecha,
+        hora: turno.hora,
+        duenio: turno.duenio,
+        mascota: turno.mascota,
+        raza: turno.raza || '',
+        telefono: turno.telefono || '',
+        tamano: turno.tamano || 'chico',
+        observaciones: turno.observaciones || '',
+        fotos: turno.fotos || []
+      });
+      turno.id = docRef.id;
+    }
+    return true;
+  } catch (error) {
+    console.error('❌ Error al guardar:', error);
+    mostrarToast('❌ Error al guardar', true);
+    return false;
+  }
+}
+
+async function eliminarTurnoFirestore(id) {
+  try {
+    await db.collection(COLECCION).doc(id).delete();
+    return true;
+  } catch (error) {
+    console.error('❌ Error al eliminar:', error);
+    mostrarToast('❌ Error al eliminar', true);
+    return false;
+  }
+}
+
+// ============================================================
+// ========== BACKUP ==========
+// ============================================================
+async function descargarBackup() {
+  if (clientes.length === 0) {
+    mostrarToast('⚠️ No hay clientes para respaldar', true);
+    return;
+  }
+
+  const zip = new JSZip();
+  const datosParaExportar = clientes.map(c => {
+    const { fotos, ...datosSinFotos } = c;
+    return {
+      ...datosSinFotos,
+      fotos: fotos ? fotos.map((f, i) => ({ nombre: f.nombre, index: i })) : []
+    };
+  });
+
+  zip.file("datos.json", JSON.stringify(datosParaExportar, null, 2));
+
+  for (const cliente of clientes) {
+    if (cliente.fotos && cliente.fotos.length > 0) {
+      for (let i = 0; i < cliente.fotos.length; i++) {
+        const foto = cliente.fotos[i];
+        const base64Data = foto.data.split(',')[1];
+        if (base64Data) {
+          zip.file(`fotos/${cliente.id}_${i}.jpg`, base64Data, { base64: true });
+        }
+      }
+    }
+  }
+
+  const content = await zip.generateAsync({ type: "blob" });
+  const fecha = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+  saveAs(content, `backup_peluqueria_${fecha}.zip`);
+  mostrarToast(`✅ Backup descargado (${clientes.length} clientes con fotos)`);
+}
+
+async function restaurarBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const zip = new JSZip();
+  mostrarToast('📂 Leyendo archivo ZIP...');
+
+  try {
+    const zipContent = await zip.loadAsync(file);
+    const datosFile = zipContent.file("datos.json");
+    if (!datosFile) {
+      mostrarToast('❌ No se encontró datos.json en el ZIP', true);
+      return;
+    }
+
+    const datosText = await datosFile.async("string");
+    const clientesImportados = JSON.parse(datosText);
+
+    if (!Array.isArray(clientesImportados) || clientesImportados.length === 0) {
+      mostrarToast('❌ El archivo no contiene clientes válidos', true);
+      return;
+    }
+
+    if (!confirm(`⚠️ Esto sobrescribirá TODOS los turnos actuales (${clientes.length} turnos) con ${clientesImportados.length} clientes del backup. ¿Continuar?`)) {
+      mostrarToast('❌ Restauración cancelada', true);
+      event.target.value = '';
+      return;
+    }
+
+    for (const cliente of clientesImportados) {
+      cliente.fotos = [];
+      if (cliente.fotos && Array.isArray(cliente.fotos)) {
+        for (let i = 0; i < cliente.fotos.length; i++) {
+          const fotoEntry = zipContent.file(`fotos/${cliente.id}_${i}.jpg`);
+          if (fotoEntry) {
+            const base64 = await fotoEntry.async("base64");
+            cliente.fotos.push({
+              data: `data:image/jpeg;base64,${base64}`,
+              nombre: `foto_${i}.jpg`
+            });
+          }
+        }
+      }
+      if (!cliente.fotos) cliente.fotos = [];
+    }
+
+    const snapshot = await db.collection(COLECCION).get();
+    for (const doc of snapshot.docs) {
+      await db.collection(COLECCION).doc(doc.id).delete();
+    }
+
+    for (const cliente of clientesImportados) {
+      if (!cliente.duenio || !cliente.mascota) continue;
+      const turno = {
+        fecha: cliente.fecha || new Date().toISOString().slice(0,10),
+        hora: cliente.hora || '10:00',
+        duenio: cliente.duenio,
+        mascota: cliente.mascota,
+        raza: cliente.raza || '',
+        telefono: cliente.telefono || '',
+        tamano: cliente.tamano || 'chico',
+        observaciones: cliente.observaciones || '',
+        fotos: cliente.fotos || []
+      };
+      await db.collection(COLECCION).add(turno);
+    }
+
+    mostrarToast(`✅ Restaurados ${clientesImportados.length} clientes con fotos`);
+    event.target.value = '';
+    await cargarTurnosFirestore();
+    renderizarAdmin();
+    renderizarCliente();
+
+  } catch (error) {
+    console.error(error);
+    mostrarToast('❌ Error al leer el archivo ZIP. Asegurate de que sea un backup válido.', true);
+  }
+}
+
+// ============================================================
+// ========== SEGURIDAD ==========
+// ============================================================
+function verificarPassword() {
+  const input = document.getElementById('passwordInput');
+  const error = document.getElementById('passwordError');
+  const password = input.value;
+  if (password === CONTRASEÑA_ADMIN) {
+    document.getElementById('passwordModal').classList.remove('visible');
+    mostrarAdmin();
+    mostrarToast('✅ Acceso concedido');
+    input.value = '';
+    error.style.display = 'none';
+  } else {
+    error.style.display = 'block';
+    input.value = '';
+    input.focus();
+    mostrarToast('❌ Contraseña incorrecta', true);
+  }
+}
+
+function toggleModo() {
+  const backupDiv = document.getElementById('backupButtons');
+  if (modoActual === 'cliente') {
+    document.getElementById('passwordModal').classList.add('visible');
+    document.getElementById('passwordInput').focus();
+  } else {
+    modoActual = 'cliente';
+    document.getElementById('clienteMode').classList.remove('oculto');
+    document.getElementById('adminMode').classList.remove('visible');
+    document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user-cog"></i> Modo Admin';
+    backupDiv.style.display = 'none';
+    renderizarCliente();
+  }
+}
+
+function mostrarAdmin() {
+  modoActual = 'admin';
+  document.getElementById('clienteMode').classList.add('oculto');
+  document.getElementById('adminMode').classList.add('visible');
+  document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user"></i> Modo Cliente';
+  document.getElementById('backupButtons').style.display = 'flex';
+  renderizarAdmin();
+}
+
+// ============================================================
+// ========== RENDERIZAR ==========
+// ============================================================
+function renderizarAdmin() {
+  actualizarContadores();
+  renderizarTabla();
+  renderizarCalendarioAdmin();
+  renderizarEstadisticas();
+  renderizarListaRecordatorios();
+  actualizarHorariosDiaAdmin();
+}
+
+function renderizarCliente() {
+    const container = document.getElementById('clienteContent');
+    if (!container) return;
+
+    let carteleraHTML = `
+        <div class="cliente-card cartelera">
+            <h2><i class="fas fa-info-circle" style="color: var(--naranja-medio);"></i> Nuestros Servicios</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 15px 0;">
+                <div style="background: var(--beige); padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">✂️</span> Corte de uñas</div>
+                <div style="background: var(--beige); padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">🧼</span> Corte higiénico</div>
+                <div style="background: var(--beige); padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">👂</span> Limpieza de orejas</div>
+                <div style="background: var(--beige); padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">🛁</span> Baño completo</div>
+                <div style="background: var(--beige); padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">💨</span> Secado</div>
+                <div style="background: var(--beige); padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">🐾</span> Cepillado</div>
+                <div style="background: var(--beige); padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">🐕</span> Corte</div>
+                <div style="background: var(--beige); padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">🎀</span> Hebillas / moño</div>
+                <div style="background: var(--beige); padding: 10px 14px; border-radius: 12px; display: flex; align-items: center; gap: 10px;"><span style="font-size: 1.5rem;">✨</span> Perfumado</div>
+            </div>
+
+            <hr style="border: 1px solid var(--naranja-claro); margin: 20px 0;">
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;">
+                <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
+                    <div style="font-size: 2rem;">🐕</div>
+                    <div style="font-weight: 700; color: var(--naranja-oscuro);">Chico</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 1 h</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$35.000</div>
+                </div>
+                <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
+                    <div style="font-size: 2rem;">🐕</div>
+                    <div style="font-weight: 700; color: var(--naranja-oscuro);">Mediano</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 2 h</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$40.000</div>
+                </div>
+                <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
+                    <div style="font-size: 2rem;">🐕</div>
+                    <div style="font-weight: 700; color: var(--naranja-oscuro);">Grande</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 3 h</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$60.000</div>
+                </div>
+                <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
+                    <div style="font-size: 2rem;">🐕</div>
+                    <div style="font-weight: 700; color: var(--naranja-oscuro);">Extragrande</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 3 h</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$80.000</div>
+                </div>
+            </div>
+
+            <div style="background: var(--verde-muy-claro); border: 2px solid var(--verde-medio); border-radius: 16px; padding: 18px; margin-top: 20px; text-align: center;">
+                <div style="font-size: 1.2rem; font-weight: 700; color: var(--verde-oscuro);">
+                    🎯 ¡Si tenes un plan Mensual de Peluqueria con nosotros, obtenés un <span style="color: var(--naranja-oscuro);">DESCUENTO POR MANTENIMIENTO</span>!
+                </div>
+                <div style="color: var(--marron); font-size: 0.95rem; margin-top: 5px;">
+                    Consultá por nuestro plan de mantenimiento mensual.
+                </div>
+                <div style="color: var(--marron); font-size: 0.85rem; margin-top: 8px; background: var(--naranja-muy-claro); padding: 8px; border-radius: 12px;">
+                    ⏰ Los turnos se reservan con <strong>2 horas de anticipación</strong>
+                </div>
+            </div>
+        </div>
+    `;
+
+    if (!datosCargados) {
+        container.innerHTML = carteleraHTML;
+        return;
+    }
+
+    const dias = obtenerDiasDisponibles();
+    let html = carteleraHTML + `
+        <div class="cliente-card">
+            <h2><i class="fas fa-calendar-day" style="color: var(--naranja-medio);"></i> Seleccioná un día</h2>
+            <div class="calendario-dias">
+    `;
+    dias.forEach(d => {
+        html += `
+            <div class="dia-btn ${clienteSeleccionado.fecha === d.fecha ? 'seleccionado' : ''}" 
+                 onclick="seleccionarDiaCliente('${d.fecha}')"
+                 style="${!d.disponible ? 'opacity:0.4;' : ''}">
+                <div class="dia-num">${d.dia}</div>
+                <div class="dia-nom">${d.diaSemana.substring(0,3)}</div>
+                <div style="font-size:0.6rem; margin-top:4px; color:${d.disponible ? 'var(--verde-oscuro)' : '#999'}">
+                    ${d.disponible ? '✅ ' + Math.round((480 - d.tiempoOcupado)/60) + ' hs libres' : '🔴 Completos'}
+                </div>
+            </div>
+        `;
+    });
+    html += `
+            </div>
+            <div style="margin-top: 10px; font-size: 0.8rem; color: #888;">
+                <span style="display:inline-block; width:16px; height:16px; background:var(--naranja-medio); border-radius:4px; vertical-align:middle; margin-right:4px;"></span> Día con turnos disponibles
+            </div>
+        </div>
+    `;
+
+    html += `
+        <div class="cliente-card">
+            <h2><i class="fas fa-dog" style="color: var(--naranja-medio);"></i> Seleccioná el tamaño de tu perro</h2>
+            <div class="form-cliente">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight:600; font-size:0.85rem; color: var(--marron);">📏 Tamaño *</label>
+                    <select id="clienteTamano" onchange="actualizarDuracionYHorarios()" style="width:100%; padding:14px 18px; border:2px solid var(--naranja-claro); border-radius:24px; background:#fefcf9; font-size:0.95rem;">
+                        <option value="chico" ${clienteTamanoSeleccionado === 'chico' ? 'selected' : ''}>🐕 Chico (1 h) - $35.000</option>
+                        <option value="mediano" ${clienteTamanoSeleccionado === 'mediano' ? 'selected' : ''}>🐕 Mediano (2 h) - $40.000</option>
+                        <option value="grande" ${clienteTamanoSeleccionado === 'grande' ? 'selected' : ''}>🐕 Grande (3 h) - $60.000</option>
+                        <option value="extragrande" ${clienteTamanoSeleccionado === 'extragrande' ? 'selected' : ''}>🐕 Extragrande (3 h) - $80.000</option>
+                    </select>
+                    <div style="font-size:0.85rem; color: var(--marron); margin-top:5px;">
+                        ⏱️ Duración estimada: <strong id="clienteDuracion">${TAMAÑOS[clienteTamanoSeleccionado].duracion / 60} horas</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    if (clienteSeleccionado.fecha) {
+        const selectTamano = document.getElementById('clienteTamano');
+        const tamano = selectTamano ? selectTamano.value : clienteTamanoSeleccionado;
+        const duracion = TAMAÑOS[tamano]?.duracion || 60;
+        const horarios = obtenerHorariosDisponibles(clienteSeleccionado.fecha, duracion);
+        html += `
+            <div class="cliente-card">
+                <h2><i class="fas fa-clock" style="color: var(--naranja-medio);"></i> Horarios disponibles</h2>
+                <div class="horarios-grid">
+        `;
+        horarios.forEach(h => {
+            const deshabilitado = h.ocupado ? 'ocupado' : '';
+            const motivo = h.motivo || (h.ocupado ? '❌ Ocupado' : '✅ Disponible');
+            html += `
+                <div class="horario-btn ${deshabilitado} ${clienteSeleccionado.hora === h.hora ? 'seleccionado' : ''}"
+                     onclick="${h.ocupado ? '' : `seleccionarHoraCliente('${h.hora}')`}"
+                     style="${h.ocupado && h.motivo ? 'cursor:not-allowed; opacity:0.5;' : ''}">
+                    <div class="hora">${h.hora}</div>
+                    <div class="estado" style="${h.ocupado && h.motivo ? 'font-size:0.55rem;' : ''}">${motivo}</div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+    }
+
+    if (clienteSeleccionado.fecha && clienteSeleccionado.hora) {
+        html += `
+            <div class="cliente-card">
+                <h2><i class="fas fa-pencil-alt" style="color: var(--naranja-medio);"></i> Completá tus datos</h2>
+                <div class="form-cliente">
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight:600; font-size:0.85rem; color: var(--marron);">🐕 Nombre de tu mascota *</label>
+                        <input type="text" id="clienteMascota" placeholder="Ej: Luna">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight:600; font-size:0.85rem; color: var(--marron);">👤 Tu nombre *</label>
+                        <input type="text" id="clienteDuenio" placeholder="Ej: María González">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight:600; font-size:0.85rem; color: var(--marron);">📱 Tu teléfono *</label>
+                        <input type="text" id="clienteTelefono" placeholder="Ej: 5491112345678">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight:600; font-size:0.85rem; color: var(--marron);">🐶 Raza (opcional)</label>
+                        <input type="text" id="clienteRaza" placeholder="Ej: Caniche, Golden">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight:600; font-size:0.85rem; color: var(--marron);">📝 Observaciones (opcional)</label>
+                        <textarea id="clienteObs" rows="2" placeholder="Algo que quieras que sepamos..."></textarea>
+                    </div>
+                    <button class="btn-confirmar" onclick="confirmarTurnoCliente()">
+                        <i class="fab fa-whatsapp"></i> Confirmar turno
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+// ============================================================
+// ===== CALENDARIO ADMIN =====
+// ============================================================
+function renderizarCalendarioAdmin() {
+    const grid = document.getElementById("calendarGridAdmin");
+    if (!grid) return;
+    
+    let fecha = new Date();
+    const hoy = new Date();
+    fecha.setDate(fecha.getDate() + semanaOffsetAdmin * 7);
+    
+    const inicio = new Date(fecha);
+    inicio.setDate(fecha.getDate() - fecha.getDay());
+    
+    const finSemana = new Date(inicio);
+    finSemana.setDate(inicio.getDate() + 6);
+    document.getElementById("semanaLabelAdmin").innerHTML = 
+        `${inicio.toLocaleDateString()} - ${finSemana.toLocaleDateString()}`;
+    
+    grid.innerHTML = "";
+    ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"].forEach(d => { 
+        grid.innerHTML += `<div class="calendar-day-header">${d}</div>`; 
+    });
+    
+    for (let i = 0; i < 7; i++) {
+        let dia = new Date(inicio);
+        dia.setDate(inicio.getDate() + i);
+        let diaStr = dia.toISOString().slice(0,10);
+        let eventos = clientes.filter(c => c.fecha === diaStr);
+        const esHoy = diaStr === hoy.toISOString().slice(0,10);
+        const esSeleccionado = diaStr === fechaSeleccionadaAdmin;
+        
+        const turnosDia = clientes.filter(c => c.fecha === diaStr);
+        const totalTurnos = turnosDia.length;
+        const capacidad = PELUQUEROS_POR_TURNO * HORARIOS_BASE.length;
+        const disponible = totalTurnos < capacidad;
+        
+        let bgColor = "var(--beige)";
+        let borderColor = "var(--naranja-claro)";
+        
+        if (esSeleccionado) {
+            bgColor = "#e3f2fd";
+            borderColor = "#2196f3";
+        } else if (esHoy) {
+            bgColor = "var(--naranja-muy-claro)";
+            borderColor = "var(--naranja-medio)";
+        } else if (!disponible) {
+            bgColor = "#ffebee";
+            borderColor = "#c7362b";
+        } else {
+            bgColor = "var(--verde-muy-claro)";
+            borderColor = "var(--verde-medio)";
+        }
+        
+        let estadoIcono = disponible ? '🟢' : '🔴';
+        if (esHoy) estadoIcono = '📌';
+        
+        let html = `<div class="calendar-day" onclick="seleccionarDiaAdmin('${diaStr}')"
+            style="background: ${bgColor}; border-color: ${borderColor}">
+            <div class="calendar-day-number">${dia.getDate()}</div>
+            <div style="font-size:0.6rem; color:var(--marron);">${estadoIcono} ${totalTurnos}/${capacidad}</div>`;
+        
+        eventos.sort((a,b) => (a.hora || "10:00").localeCompare(b.hora || "10:00"));
+        eventos.forEach(e => { 
+            const info = TAMAÑOS[e.tamano] || TAMAÑOS['chico'];
+            html += `<div class="calendar-event" onclick="event.stopPropagation(); abrirModalCliente('${e.id}')">
+                <strong>${e.hora || '10:00'}</strong> 🐕 ${e.mascota} (${info.nombre})
+            </div>`; 
+        });
+        html += `</div>`;
+        grid.innerHTML += html;
+    }
+}
+
+// ============================================================
+// ===== SELECCIONAR DÍA EN ADMIN =====
+// ============================================================
+function seleccionarDiaAdmin(fecha) {
+    fechaSeleccionadaAdmin = fecha;
+    document.getElementById('fechaSeleccionadaLabel').innerHTML = `- ${formatearFechaLocal(fecha)}`;
+    document.getElementById('fechaAdmin').value = fecha;
+    
+    horaSeleccionadaAdmin = null;
+    document.getElementById('horaAdmin').value = '';
+    document.getElementById('formularioCargaRapida').style.display = 'none';
+    
+    actualizarHorariosDiaAdmin();
+    renderizarCalendarioAdmin();
+}
+
+// ============================================================
+// ===== ACTUALIZAR HORARIOS DEL DÍA (ÓVALOS) =====
+// ============================================================
+function actualizarHorariosDiaAdmin() {
+    const container = document.getElementById('horariosDiaAdmin');
+    if (!container) return;
+    
+    const fecha = document.getElementById('fechaAdmin').value;
+    if (!fecha) {
+        container.innerHTML = '<span style="color:#888;">Hacé click en un día del calendario para ver los horarios</span>';
+        return;
+    }
+    
+    const horarios = obtenerHorariosDisponibles(fecha, 60);
+    
+    if (horarios.length === 0) {
+        container.innerHTML = '<span style="color:#888;">No hay horarios configurados para este día</span>';
+        return;
+    }
+    
+    let html = '';
+    horarios.forEach(h => {
+        const estado = h.ocupado ? 'ocupado' : 'disponible';
+        const estadoTexto = h.ocupado ? 'Ocupado' : 'Disponible';
+        const icono = h.ocupado ? '🔴' : '🟢';
+        const onclick = h.ocupado ? `verTurnosHorario('${fecha}', '${h.hora}')` : `seleccionarHoraAdmin('${fecha}', '${h.hora}')`;
+        
+        html += `
+            <div class="horario-oval ${estado}" onclick="${onclick}">
+                <div class="hora">${h.hora}</div>
+                <div class="estado">${icono} ${estadoTexto}</div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// ============================================================
+// ===== SELECCIONAR HORA EN ADMIN =====
+// ============================================================
+function seleccionarHoraAdmin(fecha, hora) {
+    horaSeleccionadaAdmin = hora;
+    document.getElementById('horaAdmin').value = hora;
+    document.getElementById('fechaCargaLabel').innerHTML = formatearFechaLocal(fecha);
+    document.getElementById('horaCargaLabel').innerHTML = hora;
+    
+    document.getElementById('formularioCargaRapida').style.display = 'block';
+    document.getElementById('duenioAdmin').focus();
+    
+    document.getElementById('duenioAdmin').value = '';
+    document.getElementById('mascotaAdmin').value = '';
+    document.getElementById('razaAdmin').value = '';
+    document.getElementById('telefonoAdmin').value = '';
+    document.getElementById('tamanoAdmin').value = 'chico';
+    
+    const ovals = document.querySelectorAll('.horario-oval');
+    ovals.forEach(ov => ov.classList.remove('seleccionado'));
+    const ovalsList = document.querySelectorAll('.horario-oval');
+    ovalsList.forEach(ov => {
+        if (ov.querySelector('.hora')?.textContent === hora) {
+            ov.classList.add('seleccionado');
+        }
+    });
+    
+    mostrarToast(`📝 Cargando turno para ${formatearFechaLocal(fecha)} a las ${hora}`);
+}
+
+// ============================================================
+// ===== VER TURNOS DE UN HORARIO OCUPADO =====
+// ============================================================
+function verTurnosHorario(fecha, hora) {
+    const turnos = clientes.filter(c => c.fecha === fecha && c.hora === hora);
+    if (turnos.length === 0) {
+        mostrarToast('No hay turnos en este horario', true);
+        return;
+    }
+    if (turnos.length === 1) {
+        abrirModalCliente(turnos[0].id);
+        return;
+    }
+    let mensaje = 'Turnos en este horario:\n';
+    turnos.forEach((c, i) => {
+        mensaje += `${i+1}. ${c.mascota} - ${c.duenio} (${TAMAÑOS[c.tamano]?.nombre || 'Chico'})\n`;
+    });
+    alert(mensaje);
+}
+
+// ============================================================
+// ===== GUARDAR TURNO DESDE ADMIN =====
+// ============================================================
+async function guardarTurnoDesdeAdmin() {
+    const fecha = document.getElementById('fechaAdmin').value;
+    const hora = document.getElementById('horaAdmin').value;
+    const duenio = document.getElementById('duenioAdmin').value.trim();
+    const mascota = document.getElementById('mascotaAdmin').value.trim();
+    const raza = document.getElementById('razaAdmin').value.trim();
+    const telefono = document.getElementById('telefonoAdmin').value.trim();
+    const tamano = document.getElementById('tamanoAdmin').value;
+    
+    if (!duenio || !mascota) {
+        alert('Completá Dueño y Mascota (obligatorios)');
+        return;
+    }
+    
+    const duracion = TAMAÑOS[tamano].duracion;
+    const horarios = obtenerHorariosDisponibles(fecha, duracion);
+    const horarioSeleccionado = horarios.find(h => h.hora === hora);
+    if (horarioSeleccionado?.ocupado) {
+        alert('❌ El horario ya fue ocupado. Recargá la página y volvé a intentar.');
+        return;
+    }
+    
+    const nuevoTurno = {
+        fecha: fecha,
+        hora: hora,
+        duenio: duenio,
+        mascota: mascota,
+        raza: raza,
+        telefono: telefono,
+        tamano: tamano,
+        observaciones: '',
+        fotos: []
+    };
+    
+    const guardado = await guardarTurnoFirestore(nuevoTurno);
+    if (guardado) {
+        mostrarToast(`✅ Turno registrado: ${mascota} - ${duenio}`);
+        document.getElementById('formularioCargaRapida').style.display = 'none';
+        horaSeleccionadaAdmin = null;
+        await cargarTurnosFirestore();
+        renderizarAdmin();
+        renderizarCliente();
+    } else {
+        alert('❌ Error al guardar el turno');
+    }
+}
+
+function cancelarCargaTurno() {
+    document.getElementById('formularioCargaRapida').style.display = 'none';
+    horaSeleccionadaAdmin = null;
+    const ovals = document.querySelectorAll('.horario-oval');
+    ovals.forEach(ov => ov.classList.remove('seleccionado'));
+    mostrarToast('❌ Carga de turno cancelada');
+}
+
+function cambiarSemanaAdmin(delta) { 
+    semanaOffsetAdmin += delta; 
+    renderizarCalendarioAdmin(); 
+}
+
+// ============================================================
+// ===== CONFIRMAR TURNO (MODO CLIENTE) =====
+// ============================================================
+async function confirmarTurnoCliente() {
+  const mascota = document.getElementById('clienteMascota').value.trim();
+  const duenio = document.getElementById('clienteDuenio').value.trim();
+  const telefono = document.getElementById('clienteTelefono').value.trim();
+  const raza = document.getElementById('clienteRaza').value.trim();
+  const obs = document.getElementById('clienteObs').value.trim();
+  const selectTamano = document.getElementById('clienteTamano');
+  const tamano = selectTamano ? selectTamano.value : clienteTamanoSeleccionado;
+
+  if (!mascota || !duenio || !telefono) {
+    alert('Completá todos los campos obligatorios (*)');
+    return;
+  }
+  if (!clienteSeleccionado.fecha || !clienteSeleccionado.hora) {
+    alert('Seleccioná un día y horario');
+    return;
+  }
+
+  const duracion = TAMAÑOS[tamano].duracion;
+  const horarios = obtenerHorariosDisponibles(clienteSeleccionado.fecha, duracion);
+  const horarioSeleccionado = horarios.find(h => h.hora === clienteSeleccionado.hora);
+  if (horarioSeleccionado?.ocupado) {
+    alert('❌ El horario seleccionado no está disponible. Elegí otro.');
+    renderizarCliente();
+    return;
+  }
+
+  const nuevoTurno = {
+    fecha: clienteSeleccionado.fecha,
+    hora: clienteSeleccionado.hora,
+    duenio: duenio,
+    mascota: mascota,
+    raza: raza,
+    telefono: telefono,
+    tamano: tamano,
+    observaciones: obs || '',
+    fotos: []
+  };
+
+  const guardado = await guardarTurnoFirestore(nuevoTurno);
+  if (!guardado) {
+    alert('❌ Error al guardar el turno. Intentá de nuevo.');
+    return;
+  }
+
+  actualizarContadores();
+
+  const infoTamano = TAMAÑOS[tamano];
+  const mensajeParaDueno = `🐾 *NUEVA RESERVA DE TURNO* 🐾
+
+Hola! Soy ${duenio} y acabo de reservar un turno.
+
+📅 Fecha: ${formatearFechaLocal(clienteSeleccionado.fecha)}
+⏰ Hora: ${clienteSeleccionado.hora}
+📏 Tamaño: ${infoTamano.nombre}
+⏱️ Duración: ${infoTamano.duracion/60} horas
+🐕 Mascota: ${mascota}
+👤 Dueño: ${duenio}
+📱 Teléfono: ${telefono}${raza ? `\n🐶 Raza: ${raza}` : ''}${obs ? `\n📝 Observaciones: ${obs}` : ''}
+
+¡Gracias! 🐾`;
+
+  const TU_NUMERO = "5492996055561";
+  const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
+  const urlWhatsApp = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensajeParaDueno)}`;
+
+  mostrarModalRecordatorio(() => {
+    window.open(urlWhatsApp, '_blank');
+    clienteSeleccionado = { fecha: null, hora: null };
+    renderizarCliente();
+    renderizarAdmin();
+    mostrarToast('✅ Turno confirmado! El dueño recibirá tu reserva por WhatsApp');
+  });
+}
+
+// ============================================================
+// ===== MODAL DE RECORDATORIO =====
+// ============================================================
+function mostrarModalRecordatorio(callback) {
+  const modal = document.getElementById('modalRecordatorio');
+  const btn = document.getElementById('btnContinuarRecordatorio');
+  callbackWhatsApp = callback;
+  modal.classList.add('visible');
+  btn.onclick = function() {
+    modal.classList.remove('visible');
+    if (callbackWhatsApp) {
+      callbackWhatsApp();
+      callbackWhatsApp = null;
+    }
+  };
+}
+
+// ============================================================
+// ========== ADMIN: TABLA ==========
+// ============================================================
+function renderizarTabla() {
+  const tbody = document.getElementById("tablaClientes");
+  if (!tbody) return;
+
+  let termino = document.getElementById("buscarCliente")?.value.toLowerCase().trim() || "";
+  let filtrados = [...clientes];
+
+  if (termino !== "") {
+    filtrados = filtrados.filter(c => 
+      c.duenio.toLowerCase().includes(termino) || 
+      c.mascota.toLowerCase().includes(termino)
+    );
+  }
+
+  if (filtroActual === 'proximos') filtrados = filtrados.filter(c => diasRestantesLocal(c.fecha) <= 7 && diasRestantesLocal(c.fecha) > 0);
+  if (filtroActual === 'vencidos') filtrados = filtrados.filter(c => diasRestantesLocal(c.fecha) <= 0);
+  if (filtroActual === 'futuros') filtrados = filtrados.filter(c => esFechaFuturaLocal(c.fecha));
+
+  filtrados.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+  tbody.innerHTML = "";
+
+  if (filtrados.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:40px;">📋 No hay turnos registrados</td></tr>`;
+    return;
+  }
+
+  for (let c of filtrados) {
+    const estado = obtenerEstadoCliente(c);
+    const clase = { futuro: "azul", proximo: "amarillo", vencido: "rojo", normal: "verde" }[estado];
+    let estadoTexto = estado === "futuro" ? "Turno futuro" : (estado === "proximo" ? `${diasRestantesLocal(c.fecha)} días` : (estado === "vencido" ? "Vencido" : "Normal"));
+    let indicador = (c.fotos?.length > 0 ? "📷 " : "") + (c.observaciones ? "📝" : "");
+    const infoTamano = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
+    const badgeClass = infoTamano.badge || 'badge-chico';
+
+    const fila = document.createElement("tr");
+    fila.className = clase;
+    fila.onclick = (e) => { if(!e.target.closest('.btn-accion')) abrirModalCliente(c.id); };
+    fila.innerHTML = `
+      <td>${escapeHtml(c.duenio)}</td>
+      <td>${escapeHtml(c.mascota)}</td>
+      <td>${escapeHtml(c.raza || '—')}</td>
+      <td><span class="badge-tamano ${badgeClass}">${infoTamano.nombre}</span></td>
+      <td>${escapeHtml(c.telefono || '—')}</td>
+      <td>${formatearFechaLocal(c.fecha)}</td>
+      <td><strong>${c.hora || '10:00'}</strong></td>
+      <td>${infoTamano.duracion/60} hs</td>
+      <td>${estadoTexto}</td>
+      <td>${indicador || '—'}</td>
+      <td class="btn-accion" onclick="event.stopPropagation()">
+        <button style="background:#25D366;border:none;padding:5px 10px;border-radius:20px;color:white;cursor:pointer;margin-right:5px;" onclick="reenviarConfirmacion('${c.id}')"><i class="fab fa-whatsapp"></i> Confirmar</button>
+        <button style="background:#b0a9a1;border:none;padding:5px 10px;border-radius:20px;cursor:pointer;" onclick="eliminarCliente('${c.id}')"><i class="fas fa-trash"></i></button>
+      </td>
+    `;
+    tbody.appendChild(fila);
+  }
+}
+
+function reenviarConfirmacion(id) {
+  const cliente = clientes.find(c => c.id === id);
+  if (cliente && cliente.telefono) {
+    const infoTamano = TAMAÑOS[cliente.tamano] || TAMAÑOS['chico'];
+    const mensaje = `🐾 *NUEVA RESERVA DE TURNO* 🐾
+
+Hola! Soy ${cliente.duenio} y acabo de reservar un turno.
+
+📅 Fecha: ${formatearFechaLocal(cliente.fecha)}
+⏰ Hora: ${cliente.hora || '10:00'}
+📏 Tamaño: ${infoTamano.nombre}
+⏱️ Duración: ${infoTamano.duracion/60} horas
+🐕 Mascota: ${cliente.mascota}
+👤 Dueño: ${cliente.duenio}
+📱 Teléfono: ${cliente.telefono}${cliente.raza ? `\n🐶 Raza: ${cliente.raza}` : ''}${cliente.observaciones ? `\n📝 Observaciones: ${cliente.observaciones}` : ''}
+
+¡Gracias! 🐾`;
+    const TU_NUMERO = "5492996055561";
+    const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
+    window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
+  } else {
+    mostrarToast("⚠️ Cliente sin número de teléfono", true);
+  }
+}
+
+function buscarCliente() { renderizarTabla(); }
+function limpiarBusqueda() { document.getElementById("buscarCliente").value = ""; renderizarTabla(); }
+function aplicarFiltro(filtro) { filtroActual = filtro; renderizarTabla(); }
+
+async function eliminarCliente(id) { 
+  if(confirm("¿Eliminar este turno?")){ 
+    const eliminado = await eliminarTurnoFirestore(id);
+    if (eliminado) {
+      clientes = clientes.filter(c=>c.id!==id); 
+      mostrarToast("Turno eliminado"); 
+      renderizarAdmin();
+    }
+  } 
+}
+
+// ============================================================
+// ========== ADMIN: MODAL ==========
+// ============================================================
+function abrirModalCliente(id) {
+  const c = clientes.find(c => c.id === id);
+  if (!c) return;
+  clienteModalActual = c;
+  fotosTemporales = [...(c.fotos || [])];
+
+  const infoTamano = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-container">
+      <div class="modal-header"><h3><i class="fas fa-paw"></i> ${escapeHtml(c.mascota)} - ${escapeHtml(c.duenio)}</h3><button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button></div>
+      <div class="modal-body">
+        <div class="modal-section"><h4 style="color:var(--naranja-oscuro); margin-bottom:15px;"><i class="fas fa-info-circle"></i> Datos del Turno</h4>
+          <div class="datos-grid" style="display:grid; grid-template-columns:repeat(2,1fr); gap:15px;">
+            <div class="dato-item"><span class="dato-label" style="font-size:0.7rem; text-transform:uppercase; color:var(--marron); font-weight:600;">Dueño</span><input type="text" id="modalDuenio" value="${escapeHtml(c.duenio)}" style="width:100%; padding:10px 14px; border:2px solid var(--naranja-claro); border-radius:24px;"></div>
+            <div class="dato-item"><span class="dato-label" style="font-size:0.7rem; text-transform:uppercase; color:var(--marron); font-weight:600;">Mascota</span><input type="text" id="modalMascota" value="${escapeHtml(c.mascota)}" style="width:100%; padding:10px 14px; border:2px solid var(--naranja-claro); border-radius:24px;"></div>
+            <div class="dato-item"><span class="dato-label" style="font-size:0.7rem; text-transform:uppercase; color:var(--marron); font-weight:600;">Raza</span><input type="text" id="modalRaza" value="${escapeHtml(c.raza || '')}" style="width:100%; padding:10px 14px; border:2px solid var(--naranja-claro); border-radius:24px;"></div>
+            <div class="dato-item"><span class="dato-label" style="font-size:0.7rem; text-transform:uppercase; color:var(--marron); font-weight:600;">Teléfono</span><input type="text" id="modalTelefono" value="${escapeHtml(c.telefono || '')}" style="width:100%; padding:10px 14px; border:2px solid var(--naranja-claro); border-radius:24px;"></div>
+            <div class="dato-item"><span class="dato-label" style="font-size:0.7rem; text-transform:uppercase; color:var(--marron); font-weight:600;">Fecha</span><input type="date" id="modalFecha" value="${c.fecha}" style="width:100%; padding:10px 14px; border:2px solid var(--naranja-claro); border-radius:24px;"></div>
+            <div class="dato-item"><span class="dato-label" style="font-size:0.7rem; text-transform:uppercase; color:var(--marron); font-weight:600;">Hora</span>
+              <select id="modalHora" style="width:100%; padding:10px 14px; border:2px solid var(--naranja-claro); border-radius:24px; background:white;">
+                <option value="09:30" ${c.hora === '09:30' ? 'selected' : ''}>09:30</option>
+                <option value="10:00" ${c.hora === '10:00' ? 'selected' : ''}>10:00</option>
+                <option value="10:30" ${c.hora === '10:30' ? 'selected' : ''}>10:30</option>
+                <option value="11:00" ${c.hora === '11:00' ? 'selected' : ''}>11:00</option>
+                <option value="16:30" ${c.hora === '16:30' ? 'selected' : ''}>16:30</option>
+                <option value="17:00" ${c.hora === '17:00' ? 'selected' : ''}>17:00</option>
+                <option value="17:30" ${c.hora === '17:30' ? 'selected' : ''}>17:30</option>
+                <option value="18:00" ${c.hora === '18:00' ? 'selected' : ''}>18:00</option>
+                <option value="18:30" ${c.hora === '18:30' ? 'selected' : ''}>18:30</option>
+                <option value="19:00" ${c.hora === '19:00' ? 'selected' : ''}>19:00</option>
+              </select>
+            </div>
+            <div class="dato-item"><span class="dato-label" style="font-size:0.7rem; text-transform:uppercase; color:var(--marron); font-weight:600;">Tamaño</span>
+              <select id="modalTamano" style="width:100%; padding:10px 14px; border:2px solid var(--naranja-claro); border-radius:24px; background:white;">
+                <option value="chico" ${c.tamano === 'chico' ? 'selected' : ''}>Chico (1 h)</option>
+                <option value="mediano" ${c.tamano === 'mediano' ? 'selected' : ''}>Mediano (2 h)</option>
+                <option value="grande" ${c.tamano === 'grande' ? 'selected' : ''}>Grande (3 h)</option>
+                <option value="extragrande" ${c.tamano === 'extragrande' ? 'selected' : ''}>Extragrande (3 h)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-section"><h4 style="color:var(--naranja-oscuro); margin-bottom:15px;"><i class="fas fa-pen-alt"></i> Observaciones</h4><textarea id="modalObservaciones" rows="3" style="width:100%; padding:12px; border-radius:20px; border:2px solid var(--naranja-claro);">${escapeHtml(c.observaciones || '')}</textarea></div>
+        <div class="modal-section"><h4 style="color:var(--naranja-oscuro); margin-bottom:15px;"><i class="fas fa-camera"></i> Fotos</h4><div class="fotos-grid" id="fotosGridModal" style="display:flex; gap:15px; flex-wrap:wrap;"></div></div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-wsp" onclick="reenviarConfirmacionModal()"><i class="fab fa-whatsapp"></i> Enviar confirmación</button>
+        <button class="modal-btn modal-btn-cerrar" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+        <button class="modal-btn modal-btn-guardar" onclick="guardarModal()">Guardar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  renderizarFotosModal();
+}
+
+function reenviarConfirmacionModal() {
+  if (clienteModalActual && clienteModalActual.telefono) {
+    const infoTamano = TAMAÑOS[clienteModalActual.tamano] || TAMAÑOS['chico'];
+    const mensaje = `🐾 *NUEVA RESERVA DE TURNO* 🐾
+
+Hola! Soy ${clienteModalActual.duenio} y acabo de reservar un turno.
+
+📅 Fecha: ${formatearFechaLocal(clienteModalActual.fecha)}
+⏰ Hora: ${clienteModalActual.hora || '10:00'}
+📏 Tamaño: ${infoTamano.nombre}
+⏱️ Duración: ${infoTamano.duracion/60} horas
+🐕 Mascota: ${clienteModalActual.mascota}
+👤 Dueño: ${clienteModalActual.duenio}
+📱 Teléfono: ${clienteModalActual.telefono}${clienteModalActual.raza ? `\n🐶 Raza: ${clienteModalActual.raza}` : ''}${clienteModalActual.observaciones ? `\n📝 Observaciones: ${clienteModalActual.observaciones}` : ''}
+
+¡Gracias! 🐾`;
+    const TU_NUMERO = "5492996055561";
+    const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
+    window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
+  } else {
+    mostrarToast("⚠️ Cliente sin número de teléfono", true);
+  }
+}
+
+function renderizarFotosModal() {
+  const grid = document.getElementById('fotosGridModal');
+  if (!grid) return;
+  grid.innerHTML = '';
+  fotosTemporales.forEach((f, idx) => {
+    const div = document.createElement('div');
+    div.className = 'foto-item';
+    div.onclick = (e) => { e.stopPropagation(); ampliarFoto(f.data); };
+    div.innerHTML = `<img src="${f.data}"><button class="delete-foto" onclick="event.stopPropagation(); eliminarFotoTemp(${idx})"><i class="fas fa-trash"></i></button>`;
+    grid.appendChild(div);
+  });
+  if (fotosTemporales.length < 2) {
+    const btn = document.createElement('div');
+    btn.className = 'btn-agregar-foto';
+    btn.innerHTML = '<i class="fas fa-plus-circle"></i><span style="font-size:0.7rem;">Agregar</span>';
+    btn.onclick = () => agregarFotoModal();
+    grid.appendChild(btn);
+  }
+}
+
+function agregarFotoModal() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/jpeg,image/png';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => { fotosTemporales.push({ data: ev.target.result, nombre: file.name }); renderizarFotosModal(); };
+      reader.readAsDataURL(file);
+    }
+  };
+  input.click();
+}
+
+function eliminarFotoTemp(idx) { fotosTemporales.splice(idx, 1); renderizarFotosModal(); }
+
+function ampliarFoto(url) {
+  const ov = document.createElement('div');
+  ov.className = 'foto-ampliada-overlay';
+  ov.onclick = () => ov.remove();
+  ov.innerHTML = `<div class="foto-ampliada-container"><img src="${url}"></div>`;
+  document.body.appendChild(ov);
+}
+
+async function guardarModal() {
+  if (!clienteModalActual) return;
+  clienteModalActual.duenio = document.getElementById('modalDuenio').value;
+  clienteModalActual.mascota = document.getElementById('modalMascota').value;
+  clienteModalActual.raza = document.getElementById('modalRaza').value;
+  clienteModalActual.telefono = document.getElementById('modalTelefono').value;
+  clienteModalActual.fecha = document.getElementById('modalFecha').value;
+  clienteModalActual.hora = document.getElementById('modalHora').value;
+  clienteModalActual.tamano = document.getElementById('modalTamano').value;
+  clienteModalActual.observaciones = document.getElementById('modalObservaciones').value;
+  clienteModalActual.fotos = fotosTemporales;
+  
+  const guardado = await guardarTurnoFirestore(clienteModalActual);
+  if (guardado) {
+    document.querySelector('.modal-overlay')?.remove();
+    mostrarToast("Cambios guardados");
+    renderizarAdmin();
+  }
+}
+
+// ============================================================
+// ========== ADMIN: ESTADÍSTICAS ==========
+// ============================================================
+function renderizarEstadisticas() {
+  document.getElementById("statTotal").innerText = clientes.length;
+  document.getElementById("statFuturos").innerText = clientes.filter(c => esFechaFuturaLocal(c.fecha)).length;
+  document.getElementById("statPorVencer").innerText = clientes.filter(c => { let d = diasRestantesLocal(c.fecha); return d > 0 && d <= 7; }).length;
+  document.getElementById("statVencidos").innerText = clientes.filter(c => diasRestantesLocal(c.fecha) <= 0 && !esFechaFuturaLocal(c.fecha)).length;
+
+  let razas = {};
+  clientes.forEach(c => { if (c.raza) razas[c.raza] = (razas[c.raza] || 0) + 1; });
+  if (razasChart) razasChart.destroy();
+  razasChart = new Chart(document.getElementById("razasChart"), { type: 'bar', data: { labels: Object.keys(razas), datasets: [{ label: 'Cantidad', data: Object.values(razas), backgroundColor: '#E8923C' }] }, options: { responsive: true } });
+
+  let fut = clientes.filter(c => esFechaFuturaLocal(c.fecha)).length;
+  let prox = clientes.filter(c => { let d = diasRestantesLocal(c.fecha); return d > 0 && d <= 7; }).length;
+  let ven = clientes.filter(c => diasRestantesLocal(c.fecha) <= 0 && !esFechaFuturaLocal(c.fecha)).length;
+  let nor = clientes.length - fut - prox - ven;
+  if (estadoChart) estadoChart.destroy();
+  estadoChart = new Chart(document.getElementById("estadoChart"), { type: 'pie', data: { labels: ['Futuros', 'Próximos', 'Vencidos', 'Normal'], datasets: [{ data: [fut, prox, ven, nor], backgroundColor: ['#2196f3', '#f9a825', '#c7362b', '#4CAF50'] }] }, options: { responsive: true } });
+}
+
+// ============================================================
+// ========== ADMIN: RECORDATORIOS ==========
+// ============================================================
+function renderizarListaRecordatorios() {
+  const cont = document.getElementById("listaRecordatorios");
+  if (!cont) return;
+  let proxs = clientes.filter(c => { let d = diasRestantesLocal(c.fecha); return d > 0 && d <= 7; });
+  cont.innerHTML = proxs.map(c => {
+    const info = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
+    return `<div class="cliente-check"><input type="checkbox" id="check_${c.id}" value="${c.id}"><label onclick="abrirModalCliente('${c.id}')" style="cursor:pointer;">🐕 ${c.mascota} - ${c.duenio} (${formatearFechaLocal(c.fecha)} ${c.hora || '10:00'} - ${info.nombre})</label></div>`;
+  }).join("");
+  if (proxs.length === 0) cont.innerHTML = "<p style='padding:15px; text-align:center; color:#888;'>No hay clientes por vencer</p>";
+}
+
+function enviarRecordatorioMasivo() {
+  let checks = document.querySelectorAll('#listaRecordatorios input:checked');
+  let selec = [];
+  checks.forEach(ch => { let id = ch.value; let c = clientes.find(c => c.id === id); if (c && c.telefono) selec.push(c); });
+  if (selec.length === 0) { alert("No seleccionaste ninguno con teléfono"); return; }
+  selec.forEach(c => { 
+    window.open(`https://wa.me/${c.telefono.replace(/[^0-9+]/g,'')}?text=${encodeURIComponent(`🐾 Recordatorio: ${c.mascota} tiene turno el ${formatearFechaLocal(c.fecha)} a las ${c.hora || '10:00'} en Familia Animal Petshop & Pelu Canina. Te esperamos!`)}`, '_blank');
+  });
+  mostrarToast(`Enviando a ${selec.length} clientes`);
+}
+
+function actualizarContadores() { 
+  document.getElementById("totalClientes").innerText = clientes.length; 
+}
+
+function escapeHtml(str) { if(!str) return ""; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+
+function mostrarToast(msg, error = false) { 
+  let t = document.createElement('div'); 
+  t.className = 'toast-msg'; 
+  t.style.background = error ? '#c0392b' : 'var(--verde-oscuro)';
+  t.innerText = msg; 
+  document.body.appendChild(t); 
+  setTimeout(() => t.remove(), 2500); 
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById(`pane-${tab}`).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'estadisticas') renderizarEstadisticas();
+  if (tab === 'recordatorios') renderizarListaRecordatorios();
+  if (tab === 'clientes') renderizarTabla();
+}
+
+// ============================================================
+// ========== INICIALIZACIÓN ==========
+// ============================================================
+async function init() {
+  await cargarTurnosFirestore();
+  
+  const hoy = new Date().toISOString().slice(0,10);
+  document.getElementById('fechaAdmin').value = hoy;
+  
+  document.getElementById('clienteMode').classList.remove('oculto');
+  document.getElementById('adminMode').classList.remove('visible');
+  document.getElementById('backupButtons').style.display = 'none';
+  
+  renderizarAdmin();
+  renderizarCliente();
+  
+  document.getElementById('passwordModal').classList.remove('visible');
+  
+  db.collection(COLECCION).onSnapshot(() => {
+    console.log('🔄 Cambios detectados en Firestore');
+    cargarTurnosFirestore().then(() => {
+      if (modoActual === 'admin') {
+        renderizarAdmin();
+      } else {
+        renderizarCliente();
+      }
+    });
+  });
+  
+  mostrarToast('✅ Conectado a la nube');
+}
+
+function actualizarDuracionYHorarios() {
+    const select = document.getElementById('clienteTamano');
+    const duracionSpan = document.getElementById('clienteDuracion');
+    if (select && duracionSpan) {
+        const tamano = select.value;
+        clienteTamanoSeleccionado = tamano;
+        const info = TAMAÑOS[tamano];
+        duracionSpan.textContent = info.duracion / 60 + ' horas';
+        renderizarCliente();
+    }
+}
+
+function seleccionarDiaCliente(fecha) {
+    clienteSeleccionado.fecha = fecha;
+    clienteSeleccionado.hora = null;
+    renderizarCliente();
+}
+
+function seleccionarHoraCliente(hora) {
+    clienteSeleccionado.hora = hora;
+    renderizarCliente();
+}
+
+init();
+</script>
+</body>
+</html>
