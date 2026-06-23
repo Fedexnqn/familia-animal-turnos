@@ -8,6 +8,9 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- JSZip para backups -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -403,7 +406,7 @@
     background: var(--beige); 
     border-radius: 16px; 
     padding: 14px 10px; 
-    min-height: 180px; 
+    min-height: 360px; 
     cursor: pointer; 
     transition: 0.2s; 
     border: 2px solid var(--naranja-claro); 
@@ -777,7 +780,7 @@
       <div id="backupButtons">
         <button class="btn-backup" onclick="descargarBackup()"><i class="fas fa-download"></i> Backup</button>
         <button class="btn-backup restore" onclick="document.getElementById('restoreInput').click()"><i class="fas fa-upload"></i> Restaurar</button>
-        <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restaurarBackup(event)">
+        <input type="file" id="restoreInput" accept=".zip" style="display:none" onchange="restaurarBackup(event)">
       </div>
       <span class="badge-counter" id="statusCloud"><i class="fas fa-cloud"></i> <span id="totalClientes">0</span> turnos</span>
       <button class="btn-toggle" id="btnToggleModo" onclick="toggleModo()">
@@ -823,10 +826,14 @@
           <div class="input-group"><label>⏰ Hora *</label>
             <select id="hora" style="background: var(--beige); border: 2px solid var(--naranja-claro); border-radius: 24px; padding: 10px 14px;">
               <option value="09:30">09:30</option>
+              <option value="10:00">10:00</option>
               <option value="10:30">10:30</option>
-              <option value="11:30">11:30</option>
+              <option value="11:00">11:00</option>
+              <option value="16:30">16:30</option>
               <option value="17:00">17:00</option>
+              <option value="17:30">17:30</option>
               <option value="18:00">18:00</option>
+              <option value="18:30">18:30</option>
               <option value="19:00">19:00</option>
             </select>
           </div>
@@ -941,6 +948,11 @@ const TAMAÑOS = {
 };
 
 // ============================================================
+// ===== HORARIOS (ACTUALIZADOS) =====
+// ============================================================
+const HORARIOS_BASE = ['09:30', '10:00', '10:30', '11:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'];
+
+// ============================================================
 // ===== VARIABLES GLOBALES =====
 // ============================================================
 let clientes = [];
@@ -953,8 +965,6 @@ let modoActual = 'cliente';
 let clienteSeleccionado = { fecha: null, hora: null };
 let datosCargados = false;
 let callbackWhatsApp = null;
-
-const HORARIOS_BASE = ['09:30', '10:30', '11:30', '17:00', '18:00', '19:00'];
 
 // ============================================================
 // ===== FUNCIONES DE FECHA =====
@@ -1049,7 +1059,6 @@ function obtenerHorariosDisponibles(fecha, duracionMinutos = 90) {
         // Verificar si se superpone con algún turno existente
         if (!ocupado) {
             for (const blq of ocupados) {
-                // Superposición: horaInicio < fin_ocupado && horaFin > inicio_ocupado
                 if (compararHoras(hora, blq.fin) < 0 && compararHoras(horaFin, blq.inicio) > 0) {
                     ocupado = true;
                     motivo = `❌ Ocupado hasta ${blq.fin}`;
@@ -1069,13 +1078,12 @@ function obtenerDiasDisponibles() {
     const dia = new Date(hoy);
     dia.setDate(hoy.getDate() + i);
     const diaStr = dia.toISOString().slice(0,10);
-    // Contar turnos y sumar duraciones para saber cuánto tiempo está ocupado
     const turnosDia = clientes.filter(c => c.fecha === diaStr);
     let tiempoOcupado = 0;
     turnosDia.forEach(c => {
         tiempoOcupado += TAMAÑOS[c.tamano]?.duracion || 90;
     });
-    const tiempoDisponible = 480; // 8 horas de trabajo (9:30 a 17:30 aprox)
+    const tiempoDisponible = 480; // 8 horas de trabajo
     const disponible = tiempoOcupado < tiempoDisponible;
     dias.push({
       fecha: diaStr,
@@ -1163,70 +1171,120 @@ async function eliminarTurnoFirestore(id) {
 }
 
 // ============================================================
-// ========== BACKUP ==========
+// ========== BACKUP CON ZIP (DATOS + FOTOS) ==========
 // ============================================================
-function descargarBackup() {
+async function descargarBackup() {
   if (clientes.length === 0) {
     mostrarToast('⚠️ No hay clientes para respaldar', true);
     return;
   }
-  const data = JSON.stringify(clientes, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `backup_clientes_${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  mostrarToast(`✅ Backup descargado (${clientes.length} clientes)`);
+
+  const zip = new JSZip();
+  const datosParaExportar = clientes.map(c => {
+    const { fotos, ...datosSinFotos } = c;
+    return {
+      ...datosSinFotos,
+      fotos: fotos ? fotos.map((f, i) => ({ nombre: f.nombre, index: i })) : []
+    };
+  });
+
+  zip.file("datos.json", JSON.stringify(datosParaExportar, null, 2));
+
+  for (const cliente of clientes) {
+    if (cliente.fotos && cliente.fotos.length > 0) {
+      for (let i = 0; i < cliente.fotos.length; i++) {
+        const foto = cliente.fotos[i];
+        const base64Data = foto.data.split(',')[1];
+        if (base64Data) {
+          zip.file(`fotos/${cliente.id}_${i}.jpg`, base64Data, { base64: true });
+        }
+      }
+    }
+  }
+
+  const content = await zip.generateAsync({ type: "blob" });
+  const fecha = new Date().toISOString().slice(0,19).replace(/:/g, '-');
+  saveAs(content, `backup_peluqueria_${fecha}.zip`);
+  mostrarToast(`✅ Backup descargado (${clientes.length} clientes con fotos)`);
 }
 
 async function restaurarBackup(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = async function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (!Array.isArray(data) || data.length === 0) {
-        mostrarToast('❌ El archivo no contiene clientes válidos', true);
-        return;
-      }
-      if (!confirm(`⚠️ Esto sobrescribirá TODOS los turnos actuales (${clientes.length} turnos) con ${data.length} clientes del backup. ¿Continuar?`)) {
-        mostrarToast('❌ Restauración cancelada', true);
-        event.target.value = '';
-        return;
-      }
-      const snapshot = await db.collection(COLECCION).get();
-      for (const doc of snapshot.docs) {
-        await db.collection(COLECCION).doc(doc.id).delete();
-      }
-      for (const cliente of data) {
-        if (!cliente.duenio || !cliente.mascota) continue;
-        const turno = {
-          fecha: cliente.fecha || new Date().toISOString().slice(0,10),
-          hora: cliente.hora || '10:00',
-          duenio: cliente.duenio,
-          mascota: cliente.mascota,
-          raza: cliente.raza || '',
-          telefono: cliente.telefono || '',
-          tamano: cliente.tamano || 'chico',
-          observaciones: cliente.observaciones || '',
-          fotos: cliente.fotos || []
-        };
-        await db.collection(COLECCION).add(turno);
-      }
-      mostrarToast(`✅ Restaurados ${data.length} clientes`);
-      event.target.value = '';
-      await cargarTurnosFirestore();
-      renderizarAdmin();
-      renderizarCliente();
-    } catch (error) {
-      console.error(error);
-      mostrarToast('❌ Error al leer el archivo. Asegurate de que sea un backup válido.', true);
+
+  const zip = new JSZip();
+  mostrarToast('📂 Leyendo archivo ZIP...');
+
+  try {
+    const zipContent = await zip.loadAsync(file);
+    const datosFile = zipContent.file("datos.json");
+    if (!datosFile) {
+      mostrarToast('❌ No se encontró datos.json en el ZIP', true);
+      return;
     }
-  };
-  reader.readAsText(file);
+
+    const datosText = await datosFile.async("string");
+    const clientesImportados = JSON.parse(datosText);
+
+    if (!Array.isArray(clientesImportados) || clientesImportados.length === 0) {
+      mostrarToast('❌ El archivo no contiene clientes válidos', true);
+      return;
+    }
+
+    if (!confirm(`⚠️ Esto sobrescribirá TODOS los turnos actuales (${clientes.length} turnos) con ${clientesImportados.length} clientes del backup. ¿Continuar?`)) {
+      mostrarToast('❌ Restauración cancelada', true);
+      event.target.value = '';
+      return;
+    }
+
+    for (const cliente of clientesImportados) {
+      cliente.fotos = [];
+      if (cliente.fotos && Array.isArray(cliente.fotos)) {
+        for (let i = 0; i < cliente.fotos.length; i++) {
+          const fotoEntry = zipContent.file(`fotos/${cliente.id}_${i}.jpg`);
+          if (fotoEntry) {
+            const base64 = await fotoEntry.async("base64");
+            cliente.fotos.push({
+              data: `data:image/jpeg;base64,${base64}`,
+              nombre: `foto_${i}.jpg`
+            });
+          }
+        }
+      }
+      if (!cliente.fotos) cliente.fotos = [];
+    }
+
+    const snapshot = await db.collection(COLECCION).get();
+    for (const doc of snapshot.docs) {
+      await db.collection(COLECCION).doc(doc.id).delete();
+    }
+
+    for (const cliente of clientesImportados) {
+      if (!cliente.duenio || !cliente.mascota) continue;
+      const turno = {
+        fecha: cliente.fecha || new Date().toISOString().slice(0,10),
+        hora: cliente.hora || '10:00',
+        duenio: cliente.duenio,
+        mascota: cliente.mascota,
+        raza: cliente.raza || '',
+        telefono: cliente.telefono || '',
+        tamano: cliente.tamano || 'chico',
+        observaciones: cliente.observaciones || '',
+        fotos: cliente.fotos || []
+      };
+      await db.collection(COLECCION).add(turno);
+    }
+
+    mostrarToast(`✅ Restaurados ${clientesImportados.length} clientes con fotos`);
+    event.target.value = '';
+    await cargarTurnosFirestore();
+    renderizarAdmin();
+    renderizarCliente();
+
+  } catch (error) {
+    console.error(error);
+    mostrarToast('❌ Error al leer el archivo ZIP. Asegurate de que sea un backup válido.', true);
+  }
 }
 
 // ============================================================
@@ -1380,7 +1438,7 @@ function renderizarCliente() {
         </div>
     `;
 
-    // ===== SELECCIÓN DE TAMAÑO (PRIMERO) =====
+    // ===== SELECCIÓN DE TAMAÑO =====
     html += `
         <div class="cliente-card">
             <h2><i class="fas fa-dog" style="color: var(--naranja-medio);"></i> Seleccioná el tamaño de tu perro</h2>
@@ -1507,7 +1565,6 @@ async function confirmarTurnoCliente() {
     return;
   }
 
-  // Verificar disponibilidad nuevamente
   const duracion = TAMAÑOS[tamano].duracion;
   const horarios = obtenerHorariosDisponibles(clienteSeleccionado.fecha, duracion);
   const horarioSeleccionado = horarios.find(h => h.hora === clienteSeleccionado.hora);
@@ -1709,10 +1766,14 @@ function abrirModalCliente(id) {
             <div class="dato-item"><span class="dato-label" style="font-size:0.7rem; text-transform:uppercase; color:var(--marron); font-weight:600;">Hora</span>
               <select id="modalHora" style="width:100%; padding:10px 14px; border:2px solid var(--naranja-claro); border-radius:24px; background:white;">
                 <option value="09:30" ${c.hora === '09:30' ? 'selected' : ''}>09:30</option>
+                <option value="10:00" ${c.hora === '10:00' ? 'selected' : ''}>10:00</option>
                 <option value="10:30" ${c.hora === '10:30' ? 'selected' : ''}>10:30</option>
-                <option value="11:30" ${c.hora === '11:30' ? 'selected' : ''}>11:30</option>
+                <option value="11:00" ${c.hora === '11:00' ? 'selected' : ''}>11:00</option>
+                <option value="16:30" ${c.hora === '16:30' ? 'selected' : ''}>16:30</option>
                 <option value="17:00" ${c.hora === '17:00' ? 'selected' : ''}>17:00</option>
+                <option value="17:30" ${c.hora === '17:30' ? 'selected' : ''}>17:30</option>
                 <option value="18:00" ${c.hora === '18:00' ? 'selected' : ''}>18:00</option>
+                <option value="18:30" ${c.hora === '18:30' ? 'selected' : ''}>18:30</option>
                 <option value="19:00" ${c.hora === '19:00' ? 'selected' : ''}>19:00</option>
               </select>
             </div>
