@@ -172,7 +172,7 @@
   .horario-btn .hora { font-size: 1.1rem; }
   .horario-btn .estado { font-size: 0.65rem; display: block; margin-top: 4px; }
 
-  .form-cliente input, .form-cliente textarea { 
+  .form-cliente input, .form-cliente textarea, .form-cliente select { 
     width: 100%; 
     padding: 14px 18px; 
     border: 2px solid var(--naranja-claro); 
@@ -182,7 +182,8 @@
     transition: 0.3s;
     background: #fefcf9;
   }
-  .form-cliente input:focus, .form-cliente textarea:focus { 
+  .form-cliente select { appearance: auto; }
+  .form-cliente input:focus, .form-cliente textarea:focus, .form-cliente select:focus { 
     border-color: var(--naranja-medio); 
     outline: none; 
     box-shadow: 0 0 0 3px rgba(232, 146, 60, 0.2);
@@ -346,7 +347,7 @@
     box-shadow: 0 5px 20px rgba(0,0,0,0.08); 
     border: 2px solid var(--naranja-claro);
   }
-  .tabla { width: 100%; border-collapse: collapse; min-width: 900px; }
+  .tabla { width: 100%; border-collapse: collapse; min-width: 1000px; }
   .tabla th { 
     background: var(--naranja-muy-claro); 
     color: var(--naranja-oscuro); 
@@ -736,6 +737,18 @@
     transform: scale(0.97);
   }
 
+  .badge-tamano {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .badge-chico { background: #81C784; color: #1e4620; }
+  .badge-mediano { background: #FFD54F; color: #7d5a00; }
+  .badge-grande { background: #FF8A65; color: #7a2e00; }
+  .badge-extragrande { background: #EF5350; color: white; }
+
   @media (max-width: 600px) {
     .cliente-header h1 { font-size: 1.8rem; }
     .cliente-header { padding: 30px 15px; }
@@ -761,7 +774,6 @@
       <span class="verde">Petshop & Pelu Canina</span>
     </h2>
     <div class="hero-botones">
-      <!-- ===== BOTONES DE BACKUP (SOLO ADMIN) ===== -->
       <div id="backupButtons">
         <button class="btn-backup" onclick="descargarBackup()"><i class="fas fa-download"></i> Backup</button>
         <button class="btn-backup restore" onclick="document.getElementById('restoreInput').click()"><i class="fas fa-upload"></i> Restaurar</button>
@@ -774,7 +786,6 @@
     </div>
   </div>
 
-  <!-- ========== MODO CLIENTE ========== -->
   <div class="cliente-mode" id="clienteMode">
     <div class="cliente-header">
       <h1>
@@ -789,7 +800,6 @@
     </div>
   </div>
 
-  <!-- ========== MODO ADMIN ========== -->
   <div class="admin-mode" id="adminMode">
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('clientes', this)"><i class="fas fa-users"></i> Turnos</button>
@@ -798,7 +808,6 @@
       <button class="tab-btn" onclick="switchTab('recordatorios', this)"><i class="fas fa-bell"></i> Recordatorios</button>
     </div>
 
-    <!-- PANE CLIENTES (Turnos) -->
     <div id="pane-clientes" class="tab-pane active">
       <div class="form-card">
         <div class="form-title">
@@ -838,13 +847,12 @@
 
       <div class="table-wrapper">
         <table class="tabla">
-          <thead><tr><th>Dueño</th><th>Mascota</th><th>Raza</th><th>Teléfono</th><th>Fecha</th><th>Hora</th><th>Estado</th><th>📎</th><th>Acciones</th></tr></thead>
+          <thead><tr><th>Dueño</th><th>Mascota</th><th>Raza</th><th>Tamaño</th><th>Teléfono</th><th>Fecha</th><th>Hora</th><th>Duración</th><th>Estado</th><th>📎</th><th>Acciones</th></tr></thead>
           <tbody id="tablaClientes"></tbody>
         </table>
       </div>
     </div>
 
-    <!-- PANE CALENDARIO -->
     <div id="pane-calendario" class="tab-pane">
       <div class="calendar-header">
         <button onclick="cambiarSemana(-1)"><i class="fas fa-chevron-left"></i> Anterior</button>
@@ -854,7 +862,6 @@
       <div class="calendar-grid" id="calendarGridAdmin"></div>
     </div>
 
-    <!-- PANE ESTADÍSTICAS -->
     <div id="pane-estadisticas" class="tab-pane">
       <div class="stats-grid">
         <div class="stat-card"><h4><i class="fas fa-users"></i> Clientes</h4><div class="stat-number" id="statTotal">0</div></div>
@@ -868,7 +875,6 @@
       </div>
     </div>
 
-    <!-- PANE RECORDATORIOS -->
     <div id="pane-recordatorios" class="tab-pane">
       <div class="recordatorio-panel">
         <h3 style="color: var(--naranja-oscuro);"><i class="fas fa-bell"></i> Enviar recordatorio masivo</h3>
@@ -881,7 +887,6 @@
 
 </div>
 
-<!-- ========== MODAL DE CONTRASEÑA ========== -->
 <div class="password-modal" id="passwordModal">
   <div class="password-box">
     <h3><i class="fas fa-lock" style="color: var(--naranja-oscuro);"></i> Acceso Administrador</h3>
@@ -892,7 +897,6 @@
   </div>
 </div>
 
-<!-- ========== MODAL DE RECORDATORIO ========== -->
 <div class="recordatorio-modal" id="modalRecordatorio">
   <div class="recordatorio-box">
     <i class="fas fa-info-circle" style="font-size: 48px; color: var(--naranja-oscuro); margin-bottom: 15px;"></i>
@@ -923,12 +927,21 @@ const firebaseConfig = {
 const CONTRASEÑA_ADMIN = "familia2026";
 const COLECCION = 'turnos';
 
-// Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ============================================================
-// ========== VARIABLES GLOBALES ==========
+// ===== TAMAÑOS Y DURACIONES =====
+// ============================================================
+const TAMAÑOS = {
+    'chico': { nombre: '🐕 Chico', duracion: 90, precio: 35000, badge: 'badge-chico' },
+    'mediano': { nombre: '🐕 Mediano', duracion: 120, precio: 40000, badge: 'badge-mediano' },
+    'grande': { nombre: '🐕 Grande', duracion: 150, precio: 60000, badge: 'badge-grande' },
+    'extragrande': { nombre: '🐕 Extragrande', duracion: 240, precio: 80000, badge: 'badge-extragrande' }
+};
+
+// ============================================================
+// ===== VARIABLES GLOBALES =====
 // ============================================================
 let clientes = [];
 let filtroActual = 'todos';
@@ -941,10 +954,10 @@ let clienteSeleccionado = { fecha: null, hora: null };
 let datosCargados = false;
 let callbackWhatsApp = null;
 
-const HORARIOS_DISPONIBLES = ['09:30', '10:30', '11:30', '17:00', '18:00', '19:00'];
+const HORARIOS_BASE = ['09:30', '10:30', '11:30', '17:00', '18:00', '19:00'];
 
 // ============================================================
-// ========== FUNCIONES DE FECHA ==========
+// ===== FUNCIONES DE FECHA =====
 // ============================================================
 function formatearFechaLocal(fechaStr) {
   if (!fechaStr) return "";
@@ -979,6 +992,76 @@ function obtenerEstadoCliente(cliente) {
   return "normal";
 }
 
+// ============================================================
+// ===== FUNCIONES DE TIEMPO =====
+// ============================================================
+function sumarMinutos(horaStr, minutos) {
+    const [h, m] = horaStr.split(':').map(Number);
+    const total = h * 60 + m + minutos;
+    const hh = Math.floor(total / 60);
+    const mm = total % 60;
+    return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
+function compararHoras(h1, h2) {
+    const [h1h, h1m] = h1.split(':').map(Number);
+    const [h2h, h2m] = h2.split(':').map(Number);
+    return h1h * 60 + h1m - (h2h * 60 + h2m);
+}
+
+function obtenerHoraMinimaReserva() {
+    const ahora = new Date();
+    ahora.setMinutes(ahora.getMinutes() + 120); // 2 horas de anticipación
+    const horas = String(ahora.getHours()).padStart(2, '0');
+    const minutos = String(ahora.getMinutes()).padStart(2, '0');
+    return `${horas}:${minutos}`;
+}
+
+// ============================================================
+// ===== OBTENER HORARIOS DISPONIBLES (CON TIEMPO) =====
+// ============================================================
+function obtenerHorariosDisponibles(fecha, duracionMinutos = 90) {
+    const turnosDia = clientes.filter(c => c.fecha === fecha);
+    
+    // Obtener todos los bloques ocupados del día
+    const ocupados = turnosDia.map(c => {
+        const duracion = TAMAÑOS[c.tamano]?.duracion || 90;
+        return {
+            inicio: c.hora || '09:30',
+            fin: sumarMinutos(c.hora || '09:30', duracion)
+        };
+    }).sort((a, b) => compararHoras(a.inicio, b.inicio));
+
+    const hoy = new Date().toISOString().slice(0,10);
+    const horaMinima = fecha === hoy ? obtenerHoraMinimaReserva() : '00:00';
+
+    return HORARIOS_BASE.map(hora => {
+        const horaFin = sumarMinutos(hora, duracionMinutos);
+        let ocupado = false;
+        let motivo = '';
+
+        // Verificar si el horario es antes de la hora mínima (solo para hoy)
+        if (fecha === hoy && compararHoras(hora, horaMinima) < 0) {
+            ocupado = true;
+            motivo = '⏳ 2hs de anticipación';
+        }
+
+        // Verificar si se superpone con algún turno existente
+        if (!ocupado) {
+            for (const blq of ocupados) {
+                // Superposición: horaInicio < fin_ocupado && horaFin > inicio_ocupado
+                if (compararHoras(hora, blq.fin) < 0 && compararHoras(horaFin, blq.inicio) > 0) {
+                    ocupado = true;
+                    motivo = `❌ Ocupado hasta ${blq.fin}`;
+                    break;
+                }
+            }
+        }
+
+        return { hora, ocupado, motivo };
+    });
+}
+
 function obtenerDiasDisponibles() {
   const dias = [];
   const hoy = new Date();
@@ -986,26 +1069,25 @@ function obtenerDiasDisponibles() {
     const dia = new Date(hoy);
     dia.setDate(hoy.getDate() + i);
     const diaStr = dia.toISOString().slice(0,10);
+    // Contar turnos y sumar duraciones para saber cuánto tiempo está ocupado
     const turnosDia = clientes.filter(c => c.fecha === diaStr);
+    let tiempoOcupado = 0;
+    turnosDia.forEach(c => {
+        tiempoOcupado += TAMAÑOS[c.tamano]?.duracion || 90;
+    });
+    const tiempoDisponible = 480; // 8 horas de trabajo (9:30 a 17:30 aprox)
+    const disponible = tiempoOcupado < tiempoDisponible;
     dias.push({
       fecha: diaStr,
       dia: dia.getDate(),
       mes: dia.getMonth() + 1,
       diaSemana: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dia.getDay()],
       turnos: turnosDia.length,
-      disponible: turnosDia.length < 6
+      tiempoOcupado: tiempoOcupado,
+      disponible: disponible
     });
   }
   return dias;
-}
-
-function obtenerHorariosDisponibles(fecha) {
-  const turnosDia = clientes.filter(c => c.fecha === fecha);
-  const horariosOcupados = turnosDia.map(c => c.hora || '10:00');
-  return HORARIOS_DISPONIBLES.map(h => ({
-    hora: h,
-    ocupado: horariosOcupados.includes(h)
-  }));
 }
 
 // ============================================================
@@ -1043,6 +1125,7 @@ async function guardarTurnoFirestore(turno) {
         mascota: turno.mascota,
         raza: turno.raza || '',
         telefono: turno.telefono || '',
+        tamano: turno.tamano || 'chico',
         observaciones: turno.observaciones || '',
         fotos: turno.fotos || []
       });
@@ -1054,6 +1137,7 @@ async function guardarTurnoFirestore(turno) {
         mascota: turno.mascota,
         raza: turno.raza || '',
         telefono: turno.telefono || '',
+        tamano: turno.tamano || 'chico',
         observaciones: turno.observaciones || '',
         fotos: turno.fotos || []
       });
@@ -1079,14 +1163,13 @@ async function eliminarTurnoFirestore(id) {
 }
 
 // ============================================================
-// ========== BACKUP Y RESTAURACIÓN ==========
+// ========== BACKUP ==========
 // ============================================================
 function descargarBackup() {
   if (clientes.length === 0) {
     mostrarToast('⚠️ No hay clientes para respaldar', true);
     return;
   }
-  
   const data = JSON.stringify(clientes, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1101,28 +1184,23 @@ function descargarBackup() {
 async function restaurarBackup(event) {
   const file = event.target.files[0];
   if (!file) return;
-  
   const reader = new FileReader();
   reader.onload = async function(e) {
     try {
       const data = JSON.parse(e.target.result);
-      
       if (!Array.isArray(data) || data.length === 0) {
         mostrarToast('❌ El archivo no contiene clientes válidos', true);
         return;
       }
-      
       if (!confirm(`⚠️ Esto sobrescribirá TODOS los turnos actuales (${clientes.length} turnos) con ${data.length} clientes del backup. ¿Continuar?`)) {
         mostrarToast('❌ Restauración cancelada', true);
         event.target.value = '';
         return;
       }
-      
       const snapshot = await db.collection(COLECCION).get();
       for (const doc of snapshot.docs) {
         await db.collection(COLECCION).doc(doc.id).delete();
       }
-      
       for (const cliente of data) {
         if (!cliente.duenio || !cliente.mascota) continue;
         const turno = {
@@ -1132,18 +1210,17 @@ async function restaurarBackup(event) {
           mascota: cliente.mascota,
           raza: cliente.raza || '',
           telefono: cliente.telefono || '',
+          tamano: cliente.tamano || 'chico',
           observaciones: cliente.observaciones || '',
           fotos: cliente.fotos || []
         };
         await db.collection(COLECCION).add(turno);
       }
-      
       mostrarToast(`✅ Restaurados ${data.length} clientes`);
       event.target.value = '';
       await cargarTurnosFirestore();
       renderizarAdmin();
       renderizarCliente();
-      
     } catch (error) {
       console.error(error);
       mostrarToast('❌ Error al leer el archivo. Asegurate de que sea un backup válido.', true);
@@ -1159,7 +1236,6 @@ function verificarPassword() {
   const input = document.getElementById('passwordInput');
   const error = document.getElementById('passwordError');
   const password = input.value;
-  
   if (password === CONTRASEÑA_ADMIN) {
     document.getElementById('passwordModal').classList.remove('visible');
     mostrarAdmin();
@@ -1213,7 +1289,7 @@ function renderizarCliente() {
     const container = document.getElementById('clienteContent');
     if (!container) return;
 
-    // ===== CARTELERA (siempre visible) =====
+    // ===== CARTELERA =====
     let carteleraHTML = `
         <div class="cliente-card cartelera">
             <h2><i class="fas fa-info-circle" style="color: var(--naranja-medio);"></i> Nuestros Servicios</h2>
@@ -1235,21 +1311,25 @@ function renderizarCliente() {
                 <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
                     <div style="font-size: 2rem;">🐕</div>
                     <div style="font-weight: 700; color: var(--naranja-oscuro);">Chico</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 1.5 hs</div>
                     <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$35.000</div>
                 </div>
                 <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
                     <div style="font-size: 2rem;">🐕</div>
                     <div style="font-weight: 700; color: var(--naranja-oscuro);">Mediano</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 2 hs</div>
                     <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$40.000</div>
                 </div>
                 <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
                     <div style="font-size: 2rem;">🐕</div>
                     <div style="font-weight: 700; color: var(--naranja-oscuro);">Grande</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 2.5 hs</div>
                     <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$60.000</div>
                 </div>
                 <div style="background: var(--naranja-muy-claro); padding: 15px; border-radius: 16px; text-align: center; border: 2px solid var(--naranja-claro);">
                     <div style="font-size: 2rem;">🐕</div>
                     <div style="font-weight: 700; color: var(--naranja-oscuro);">Extragrande</div>
+                    <div style="font-size: 1rem; color: var(--marron);">⏱️ 4 hs</div>
                     <div style="font-size: 1.3rem; font-weight: 700; color: var(--verde-oscuro);">$80.000</div>
                 </div>
             </div>
@@ -1261,19 +1341,18 @@ function renderizarCliente() {
                 <div style="color: var(--marron); font-size: 0.95rem; margin-top: 5px;">
                     Consultá por nuestro plan de mantenimiento mensual.
                 </div>
+                <div style="color: var(--marron); font-size: 0.85rem; margin-top: 8px; background: var(--naranja-muy-claro); padding: 8px; border-radius: 12px;">
+                    ⏰ Los turnos se reservan con <strong>2 horas de anticipación</strong>
+                </div>
             </div>
         </div>
     `;
 
-    // ===== SI NO HAY DATOS CARGADOS, MOSTRAR SOLO LA CARTELERA =====
-   if (!datosCargados) {
-    // Mostrar la cartelera aunque los datos no estén cargados
-    const carteleraHTML = `...`; // (copiá la cartelera que te pasé arriba)
-    container.innerHTML = carteleraHTML;
-    return;
-}
+    if (!datosCargados) {
+        container.innerHTML = carteleraHTML;
+        return;
+    }
 
-    // ===== RESTO DEL CONTENIDO (días y horarios) =====
     const dias = obtenerDiasDisponibles();
     let html = carteleraHTML + `
         <div class="cliente-card">
@@ -1288,7 +1367,7 @@ function renderizarCliente() {
                 <div class="dia-num">${d.dia}</div>
                 <div class="dia-nom">${d.diaSemana.substring(0,3)}</div>
                 <div style="font-size:0.6rem; margin-top:4px; color:${d.disponible ? 'var(--verde-oscuro)' : '#999'}">
-                    ${d.disponible ? '✅ ' + (6 - d.turnos) + ' turnos' : '🔴 Completos'}
+                    ${d.disponible ? '✅ ' + Math.round((480 - d.tiempoOcupado)/60) + ' hs libres' : '🔴 Completos'}
                 </div>
             </div>
         `;
@@ -1301,20 +1380,47 @@ function renderizarCliente() {
         </div>
     `;
 
+    // ===== SELECCIÓN DE TAMAÑO (PRIMERO) =====
+    html += `
+        <div class="cliente-card">
+            <h2><i class="fas fa-dog" style="color: var(--naranja-medio);"></i> Seleccioná el tamaño de tu perro</h2>
+            <div class="form-cliente">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-weight:600; font-size:0.85rem; color: var(--marron);">📏 Tamaño *</label>
+                    <select id="clienteTamano" onchange="actualizarDuracionYHorarios()" style="width:100%; padding:14px 18px; border:2px solid var(--naranja-claro); border-radius:24px; background:#fefcf9; font-size:0.95rem;">
+                        <option value="chico">🐕 Chico (1.5 hs) - $35.000</option>
+                        <option value="mediano">🐕 Mediano (2 hs) - $40.000</option>
+                        <option value="grande">🐕 Grande (2.5 hs) - $60.000</option>
+                        <option value="extragrande">🐕 Extragrande (4 hs) - $80.000</option>
+                    </select>
+                    <div style="font-size:0.85rem; color: var(--marron); margin-top:5px;">
+                        ⏱️ Duración estimada: <strong id="clienteDuracion">1.5 horas</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
     // ===== HORARIOS =====
     if (clienteSeleccionado.fecha) {
-        const horarios = obtenerHorariosDisponibles(clienteSeleccionado.fecha);
+        const selectTamano = document.getElementById('clienteTamano');
+        const tamano = selectTamano ? selectTamano.value : 'chico';
+        const duracion = TAMAÑOS[tamano]?.duracion || 90;
+        const horarios = obtenerHorariosDisponibles(clienteSeleccionado.fecha, duracion);
         html += `
             <div class="cliente-card">
                 <h2><i class="fas fa-clock" style="color: var(--naranja-medio);"></i> Horarios disponibles</h2>
                 <div class="horarios-grid">
         `;
         horarios.forEach(h => {
+            const deshabilitado = h.ocupado ? 'ocupado' : '';
+            const motivo = h.motivo || (h.ocupado ? '❌ Ocupado' : '✅ Disponible');
             html += `
-                <div class="horario-btn ${h.ocupado ? 'ocupado' : ''} ${clienteSeleccionado.hora === h.hora ? 'seleccionado' : ''}"
-                     onclick="${h.ocupado ? '' : `seleccionarHoraCliente('${h.hora}')`}">
+                <div class="horario-btn ${deshabilitado} ${clienteSeleccionado.hora === h.hora ? 'seleccionado' : ''}"
+                     onclick="${h.ocupado ? '' : `seleccionarHoraCliente('${h.hora}')`}"
+                     style="${h.ocupado && h.motivo ? 'cursor:not-allowed; opacity:0.5;' : ''}">
                     <div class="hora">${h.hora}</div>
-                    <div class="estado">${h.ocupado ? '❌ Ocupado' : '✅ Disponible'}</div>
+                    <div class="estado" style="${h.ocupado && h.motivo ? 'font-size:0.55rem;' : ''}">${motivo}</div>
                 </div>
             `;
         });
@@ -1358,6 +1464,17 @@ function renderizarCliente() {
     container.innerHTML = html;
 }
 
+function actualizarDuracionYHorarios() {
+    const select = document.getElementById('clienteTamano');
+    const duracionSpan = document.getElementById('clienteDuracion');
+    if (select && duracionSpan) {
+        const tamano = select.value;
+        const info = TAMAÑOS[tamano];
+        duracionSpan.textContent = info.duracion / 60 + ' horas';
+        renderizarCliente();
+    }
+}
+
 function seleccionarDiaCliente(fecha) {
   clienteSeleccionado.fecha = fecha;
   clienteSeleccionado.hora = null;
@@ -1371,7 +1488,7 @@ function seleccionarHoraCliente(hora) {
 }
 
 // ============================================================
-// ===== CONFIRMAR TURNO CON MODAL =====
+// ===== CONFIRMAR TURNO =====
 // ============================================================
 async function confirmarTurnoCliente() {
   const mascota = document.getElementById('clienteMascota').value.trim();
@@ -1379,6 +1496,7 @@ async function confirmarTurnoCliente() {
   const telefono = document.getElementById('clienteTelefono').value.trim();
   const raza = document.getElementById('clienteRaza').value.trim();
   const obs = document.getElementById('clienteObs').value.trim();
+  const tamano = document.getElementById('clienteTamano').value;
 
   if (!mascota || !duenio || !telefono) {
     alert('Completá todos los campos obligatorios (*)');
@@ -1389,9 +1507,11 @@ async function confirmarTurnoCliente() {
     return;
   }
 
-  const horariosDia = obtenerHorariosDisponibles(clienteSeleccionado.fecha);
-  const horarioOcupado = horariosDia.find(h => h.hora === clienteSeleccionado.hora && h.ocupado);
-  if (horarioOcupado) {
+  // Verificar disponibilidad nuevamente
+  const duracion = TAMAÑOS[tamano].duracion;
+  const horarios = obtenerHorariosDisponibles(clienteSeleccionado.fecha, duracion);
+  const horarioSeleccionado = horarios.find(h => h.hora === clienteSeleccionado.hora);
+  if (horarioSeleccionado?.ocupado) {
     alert('❌ El horario seleccionado ya fue ocupado. Elegí otro.');
     renderizarCliente();
     return;
@@ -1404,6 +1524,7 @@ async function confirmarTurnoCliente() {
     mascota: mascota,
     raza: raza,
     telefono: telefono,
+    tamano: tamano,
     observaciones: obs || '',
     fotos: []
   };
@@ -1414,16 +1535,17 @@ async function confirmarTurnoCliente() {
     return;
   }
 
-  // ⭐ NO agregar manualmente - el listener de Firebase lo hará
   actualizarContadores();
 
-  // ===== MENSAJE PARA EL DUEÑO =====
+  const infoTamano = TAMAÑOS[tamano];
   const mensajeParaDueno = `🐾 *NUEVA RESERVA DE TURNO* 🐾
 
 Hola! Soy ${duenio} y acabo de reservar un turno.
 
 📅 Fecha: ${formatearFechaLocal(clienteSeleccionado.fecha)}
 ⏰ Hora: ${clienteSeleccionado.hora}
+📏 Tamaño: ${infoTamano.nombre}
+⏱️ Duración: ${infoTamano.duracion/60} horas
 🐕 Mascota: ${mascota}
 👤 Dueño: ${duenio}
 📱 Teléfono: ${telefono}${raza ? `\n🐶 Raza: ${raza}` : ''}${obs ? `\n📝 Observaciones: ${obs}` : ''}
@@ -1434,7 +1556,6 @@ Hola! Soy ${duenio} y acabo de reservar un turno.
   const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
   const urlWhatsApp = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensajeParaDueno)}`;
 
-  // Mostrar modal y guardar callback
   mostrarModalRecordatorio(() => {
     window.open(urlWhatsApp, '_blank');
     clienteSeleccionado = { fecha: null, hora: null };
@@ -1450,10 +1571,8 @@ Hola! Soy ${duenio} y acabo de reservar un turno.
 function mostrarModalRecordatorio(callback) {
   const modal = document.getElementById('modalRecordatorio');
   const btn = document.getElementById('btnContinuarRecordatorio');
-  
   callbackWhatsApp = callback;
   modal.classList.add('visible');
-  
   btn.onclick = function() {
     modal.classList.remove('visible');
     if (callbackWhatsApp) {
@@ -1488,7 +1607,7 @@ function renderizarTabla() {
   tbody.innerHTML = "";
 
   if (filtrados.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:40px;">📋 No hay turnos registrados</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:40px;">📋 No hay turnos registrados</td></tr>`;
     return;
   }
 
@@ -1497,6 +1616,8 @@ function renderizarTabla() {
     const clase = { futuro: "azul", proximo: "amarillo", vencido: "rojo", normal: "verde" }[estado];
     let estadoTexto = estado === "futuro" ? "Turno futuro" : (estado === "proximo" ? `${diasRestantesLocal(c.fecha)} días` : (estado === "vencido" ? "Vencido" : "Normal"));
     let indicador = (c.fotos?.length > 0 ? "📷 " : "") + (c.observaciones ? "📝" : "");
+    const infoTamano = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
+    const badgeClass = infoTamano.badge || 'badge-chico';
 
     const fila = document.createElement("tr");
     fila.className = clase;
@@ -1505,9 +1626,11 @@ function renderizarTabla() {
       <td>${escapeHtml(c.duenio)}</td>
       <td>${escapeHtml(c.mascota)}</td>
       <td>${escapeHtml(c.raza || '—')}</td>
+      <td><span class="badge-tamano ${badgeClass}">${infoTamano.nombre}</span></td>
       <td>${escapeHtml(c.telefono || '—')}</td>
       <td>${formatearFechaLocal(c.fecha)}</td>
       <td><strong>${c.hora || '10:00'}</strong></td>
+      <td>${infoTamano.duracion/60} hs</td>
       <td>${estadoTexto}</td>
       <td>${indicador || '—'}</td>
       <td class="btn-accion" onclick="event.stopPropagation()">
@@ -1522,12 +1645,15 @@ function renderizarTabla() {
 function reenviarConfirmacion(id) {
   const cliente = clientes.find(c => c.id === id);
   if (cliente && cliente.telefono) {
+    const infoTamano = TAMAÑOS[cliente.tamano] || TAMAÑOS['chico'];
     const mensaje = `🐾 *NUEVA RESERVA DE TURNO* 🐾
 
 Hola! Soy ${cliente.duenio} y acabo de reservar un turno.
 
 📅 Fecha: ${formatearFechaLocal(cliente.fecha)}
 ⏰ Hora: ${cliente.hora || '10:00'}
+📏 Tamaño: ${infoTamano.nombre}
+⏱️ Duración: ${infoTamano.duracion/60} horas
 🐕 Mascota: ${cliente.mascota}
 👤 Dueño: ${cliente.duenio}
 📱 Teléfono: ${cliente.telefono}${cliente.raza ? `\n🐶 Raza: ${cliente.raza}` : ''}${cliente.observaciones ? `\n📝 Observaciones: ${cliente.observaciones}` : ''}
@@ -1565,6 +1691,8 @@ function abrirModalCliente(id) {
   clienteModalActual = c;
   fotosTemporales = [...(c.fotos || [])];
 
+  const infoTamano = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
+
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.innerHTML = `
@@ -1588,6 +1716,14 @@ function abrirModalCliente(id) {
                 <option value="19:00" ${c.hora === '19:00' ? 'selected' : ''}>19:00</option>
               </select>
             </div>
+            <div class="dato-item"><span class="dato-label" style="font-size:0.7rem; text-transform:uppercase; color:var(--marron); font-weight:600;">Tamaño</span>
+              <select id="modalTamano" style="width:100%; padding:10px 14px; border:2px solid var(--naranja-claro); border-radius:24px; background:white;">
+                <option value="chico" ${c.tamano === 'chico' ? 'selected' : ''}>Chico (1.5 hs)</option>
+                <option value="mediano" ${c.tamano === 'mediano' ? 'selected' : ''}>Mediano (2 hs)</option>
+                <option value="grande" ${c.tamano === 'grande' ? 'selected' : ''}>Grande (2.5 hs)</option>
+                <option value="extragrande" ${c.tamano === 'extragrande' ? 'selected' : ''}>Extragrande (4 hs)</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="modal-section"><h4 style="color:var(--naranja-oscuro); margin-bottom:15px;"><i class="fas fa-pen-alt"></i> Observaciones</h4><textarea id="modalObservaciones" rows="3" style="width:100%; padding:12px; border-radius:20px; border:2px solid var(--naranja-claro);">${escapeHtml(c.observaciones || '')}</textarea></div>
@@ -1606,12 +1742,15 @@ function abrirModalCliente(id) {
 
 function reenviarConfirmacionModal() {
   if (clienteModalActual && clienteModalActual.telefono) {
+    const infoTamano = TAMAÑOS[clienteModalActual.tamano] || TAMAÑOS['chico'];
     const mensaje = `🐾 *NUEVA RESERVA DE TURNO* 🐾
 
 Hola! Soy ${clienteModalActual.duenio} y acabo de reservar un turno.
 
 📅 Fecha: ${formatearFechaLocal(clienteModalActual.fecha)}
 ⏰ Hora: ${clienteModalActual.hora || '10:00'}
+📏 Tamaño: ${infoTamano.nombre}
+⏱️ Duración: ${infoTamano.duracion/60} horas
 🐕 Mascota: ${clienteModalActual.mascota}
 👤 Dueño: ${clienteModalActual.duenio}
 📱 Teléfono: ${clienteModalActual.telefono}${clienteModalActual.raza ? `\n🐶 Raza: ${clienteModalActual.raza}` : ''}${clienteModalActual.observaciones ? `\n📝 Observaciones: ${clienteModalActual.observaciones}` : ''}
@@ -1678,6 +1817,7 @@ async function guardarModal() {
   clienteModalActual.telefono = document.getElementById('modalTelefono').value;
   clienteModalActual.fecha = document.getElementById('modalFecha').value;
   clienteModalActual.hora = document.getElementById('modalHora').value;
+  clienteModalActual.tamano = document.getElementById('modalTamano').value;
   clienteModalActual.observaciones = document.getElementById('modalObservaciones').value;
   clienteModalActual.fotos = fotosTemporales;
   
@@ -1710,7 +1850,8 @@ function renderizarCalendarioAdmin() {
     let html = `<div class="calendar-day"><div class="calendar-day-number">${dia.getDate()}</div>`;
     eventos.sort((a,b) => (a.hora || "10:00").localeCompare(b.hora || "10:00"));
     eventos.forEach(e => { 
-      html += `<div class="calendar-event" onclick="event.stopPropagation(); abrirModalCliente('${e.id}')"><strong>${e.hora || '10:00'}</strong> 🐕 ${e.mascota}</div>`; 
+      const info = TAMAÑOS[e.tamano] || TAMAÑOS['chico'];
+      html += `<div class="calendar-event" onclick="event.stopPropagation(); abrirModalCliente('${e.id}')"><strong>${e.hora || '10:00'}</strong> 🐕 ${e.mascota} (${info.nombre})</div>`; 
     });
     html += `</div>`;
     grid.innerHTML += html;
@@ -1748,7 +1889,10 @@ function renderizarListaRecordatorios() {
   const cont = document.getElementById("listaRecordatorios");
   if (!cont) return;
   let proxs = clientes.filter(c => { let d = diasRestantesLocal(c.fecha); return d > 0 && d <= 7; });
-  cont.innerHTML = proxs.map(c => `<div class="cliente-check"><input type="checkbox" id="check_${c.id}" value="${c.id}"><label onclick="abrirModalCliente('${c.id}')" style="cursor:pointer;">🐕 ${c.mascota} - ${c.duenio} (${formatearFechaLocal(c.fecha)} ${c.hora || '10:00'})</label></div>`).join("");
+  cont.innerHTML = proxs.map(c => {
+    const info = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
+    return `<div class="cliente-check"><input type="checkbox" id="check_${c.id}" value="${c.id}"><label onclick="abrirModalCliente('${c.id}')" style="cursor:pointer;">🐕 ${c.mascota} - ${c.duenio} (${formatearFechaLocal(c.fecha)} ${c.hora || '10:00'} - ${info.nombre})</label></div>`;
+  }).join("");
   if (proxs.length === 0) cont.innerHTML = "<p style='padding:15px; text-align:center; color:#888;'>No hay clientes por vencer</p>";
 }
 
@@ -1779,6 +1923,7 @@ async function registrarClienteAdmin() {
     existing.hora = hora;
     existing.raza = document.getElementById("raza").value;
     existing.telefono = document.getElementById("telefono").value;
+    existing.tamano = document.getElementById("tamano")?.value || 'chico';
     const guardado = await guardarTurnoFirestore(existing);
     if (guardado) {
       mostrarToast("Turno actualizado");
@@ -1795,16 +1940,15 @@ async function registrarClienteAdmin() {
     mascota: mascota,
     raza: document.getElementById("raza").value,
     telefono: document.getElementById("telefono").value,
+    tamano: document.getElementById("tamano")?.value || 'chico',
     observaciones: "",
     fotos: []
   };
 
   const guardado = await guardarTurnoFirestore(nuevoTurno);
   if (guardado) {
-    // ⭐ NO agregar manualmente - el listener de Firebase lo hará
     mostrarToast("Turno registrado");
     limpiarFormAdmin();
-    // El listener de Firebase actualizará la tabla
   }
 }
 
@@ -1853,7 +1997,6 @@ async function init() {
   
   document.getElementById('clienteMode').classList.remove('oculto');
   document.getElementById('adminMode').classList.remove('visible');
-  
   document.getElementById('backupButtons').style.display = 'none';
   
   renderizarAdmin();
