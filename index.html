@@ -406,7 +406,7 @@
     background: var(--beige); 
     border-radius: 16px; 
     padding: 14px 10px; 
-    min-height: 360px; 
+    min-height: 180px; 
     cursor: pointer; 
     transition: 0.2s; 
     border: 2px solid var(--naranja-claro); 
@@ -965,6 +965,7 @@ let modoActual = 'cliente';
 let clienteSeleccionado = { fecha: null, hora: null };
 let datosCargados = false;
 let callbackWhatsApp = null;
+let clienteTamanoSeleccionado = 'chico'; // 👈 Guarda el tamaño elegido
 
 // ============================================================
 // ===== FUNCIONES DE FECHA =====
@@ -1021,19 +1022,17 @@ function compararHoras(h1, h2) {
 
 function obtenerHoraMinimaReserva() {
     const ahora = new Date();
-    ahora.setMinutes(ahora.getMinutes() + 120); // 2 horas de anticipación
+    ahora.setMinutes(ahora.getMinutes() + 120);
     const horas = String(ahora.getHours()).padStart(2, '0');
     const minutos = String(ahora.getMinutes()).padStart(2, '0');
     return `${horas}:${minutos}`;
 }
 
 // ============================================================
-// ===== OBTENER HORARIOS DISPONIBLES (CON TIEMPO) =====
+// ===== OBTENER HORARIOS DISPONIBLES =====
 // ============================================================
 function obtenerHorariosDisponibles(fecha, duracionMinutos = 90) {
     const turnosDia = clientes.filter(c => c.fecha === fecha);
-    
-    // Obtener todos los bloques ocupados del día
     const ocupados = turnosDia.map(c => {
         const duracion = TAMAÑOS[c.tamano]?.duracion || 90;
         return {
@@ -1050,13 +1049,11 @@ function obtenerHorariosDisponibles(fecha, duracionMinutos = 90) {
         let ocupado = false;
         let motivo = '';
 
-        // Verificar si el horario es antes de la hora mínima (solo para hoy)
         if (fecha === hoy && compararHoras(hora, horaMinima) < 0) {
             ocupado = true;
             motivo = '⏳ 2hs de anticipación';
         }
 
-        // Verificar si se superpone con algún turno existente
         if (!ocupado) {
             for (const blq of ocupados) {
                 if (compararHoras(hora, blq.fin) < 0 && compararHoras(horaFin, blq.inicio) > 0) {
@@ -1083,7 +1080,7 @@ function obtenerDiasDisponibles() {
     turnosDia.forEach(c => {
         tiempoOcupado += TAMAÑOS[c.tamano]?.duracion || 90;
     });
-    const tiempoDisponible = 480; // 8 horas de trabajo
+    const tiempoDisponible = 480;
     const disponible = tiempoOcupado < tiempoDisponible;
     dias.push({
       fecha: diaStr,
@@ -1171,7 +1168,7 @@ async function eliminarTurnoFirestore(id) {
 }
 
 // ============================================================
-// ========== BACKUP CON ZIP (DATOS + FOTOS) ==========
+// ========== BACKUP CON ZIP ==========
 // ============================================================
 async function descargarBackup() {
   if (clientes.length === 0) {
@@ -1446,13 +1443,13 @@ function renderizarCliente() {
                 <div style="margin-bottom: 15px;">
                     <label style="font-weight:600; font-size:0.85rem; color: var(--marron);">📏 Tamaño *</label>
                     <select id="clienteTamano" onchange="actualizarDuracionYHorarios()" style="width:100%; padding:14px 18px; border:2px solid var(--naranja-claro); border-radius:24px; background:#fefcf9; font-size:0.95rem;">
-                        <option value="chico">🐕 Chico (1.5 hs) - $35.000</option>
-                        <option value="mediano">🐕 Mediano (2 hs) - $40.000</option>
-                        <option value="grande">🐕 Grande (2.5 hs) - $60.000</option>
-                        <option value="extragrande">🐕 Extragrande (4 hs) - $80.000</option>
+                        <option value="chico" ${clienteTamanoSeleccionado === 'chico' ? 'selected' : ''}>🐕 Chico (1.5 hs) - $35.000</option>
+                        <option value="mediano" ${clienteTamanoSeleccionado === 'mediano' ? 'selected' : ''}>🐕 Mediano (2 hs) - $40.000</option>
+                        <option value="grande" ${clienteTamanoSeleccionado === 'grande' ? 'selected' : ''}>🐕 Grande (2.5 hs) - $60.000</option>
+                        <option value="extragrande" ${clienteTamanoSeleccionado === 'extragrande' ? 'selected' : ''}>🐕 Extragrande (4 hs) - $80.000</option>
                     </select>
                     <div style="font-size:0.85rem; color: var(--marron); margin-top:5px;">
-                        ⏱️ Duración estimada: <strong id="clienteDuracion">1.5 horas</strong>
+                        ⏱️ Duración estimada: <strong id="clienteDuracion">${TAMAÑOS[clienteTamanoSeleccionado].duracion / 60} horas</strong>
                     </div>
                 </div>
             </div>
@@ -1462,7 +1459,7 @@ function renderizarCliente() {
     // ===== HORARIOS =====
     if (clienteSeleccionado.fecha) {
         const selectTamano = document.getElementById('clienteTamano');
-        const tamano = selectTamano ? selectTamano.value : 'chico';
+        const tamano = selectTamano ? selectTamano.value : clienteTamanoSeleccionado;
         const duracion = TAMAÑOS[tamano]?.duracion || 90;
         const horarios = obtenerHorariosDisponibles(clienteSeleccionado.fecha, duracion);
         html += `
@@ -1527,6 +1524,7 @@ function actualizarDuracionYHorarios() {
     const duracionSpan = document.getElementById('clienteDuracion');
     if (select && duracionSpan) {
         const tamano = select.value;
+        clienteTamanoSeleccionado = tamano;
         const info = TAMAÑOS[tamano];
         duracionSpan.textContent = info.duracion / 60 + ' horas';
         renderizarCliente();
@@ -1534,9 +1532,14 @@ function actualizarDuracionYHorarios() {
 }
 
 function seleccionarDiaCliente(fecha) {
-  clienteSeleccionado.fecha = fecha;
-  clienteSeleccionado.hora = null;
-  renderizarCliente();
+    // Guardar el tamaño seleccionado antes de recargar
+    const select = document.getElementById('clienteTamano');
+    if (select) {
+        clienteTamanoSeleccionado = select.value;
+    }
+    clienteSeleccionado.fecha = fecha;
+    clienteSeleccionado.hora = null;
+    renderizarCliente();
 }
 
 function seleccionarHoraCliente(hora) {
@@ -1554,7 +1557,8 @@ async function confirmarTurnoCliente() {
   const telefono = document.getElementById('clienteTelefono').value.trim();
   const raza = document.getElementById('clienteRaza').value.trim();
   const obs = document.getElementById('clienteObs').value.trim();
-  const tamano = document.getElementById('clienteTamano').value;
+  const selectTamano = document.getElementById('clienteTamano');
+  const tamano = selectTamano ? selectTamano.value : clienteTamanoSeleccionado;
 
   if (!mascota || !duenio || !telefono) {
     alert('Completá todos los campos obligatorios (*)');
