@@ -818,22 +818,381 @@
     gap: 10px;
   }
 
-  @media (max-width: 600px) {
-    .cliente-header h1 { font-size: 1.8rem; }
-    .cliente-header { padding: 30px 15px; }
-    .cliente-card { padding: 20px; }
-    .horarios-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
-    .calendario-dias { gap: 6px; }
-    .dia-btn { padding: 8px 4px; }
-    .dia-btn .dia-num { font-size: 1rem; }
-    .hero h2 { font-size: 1.2rem; }
-    .hero { padding: 12px 18px; }
-    .search-box input { width: 150px; }
-    .btn-backup { font-size: 0.7rem; padding: 6px 12px; }
-    .horario-oval { min-width: 60px; padding: 6px 12px; font-size: 0.7rem; }
-    .horario-oval .hora { font-size: 0.8rem; }
-    .calendar-day { min-height: 150px; }
-    .calendar-grid { padding: 12px; gap: 6px; }
+  /* ============================================================ */
+  /* ===== MEDIA QUERIES PARA RESPONSIVE ===== */
+  /* ============================================================ */
+  
+  @media (max-width: 768px) {
+    body { padding: 10px; }
+    .dashboard { padding: 0; }
+    
+    .hero {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 12px 16px;
+      border-radius: 24px;
+      gap: 10px;
+    }
+    .hero h2 { 
+      font-size: 1rem; 
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .hero-botones { 
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-backup { 
+      font-size: 0.6rem; 
+      padding: 5px 10px; 
+    }
+    .badge-counter { 
+      font-size: 0.65rem; 
+      padding: 4px 10px; 
+    }
+    .btn-toggle { 
+      font-size: 0.7rem; 
+      padding: 6px 14px; 
+    }
+    .btn-toggle .btn-texto { display: none; }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .tab-btn {
+      padding: 10px 6px;
+      font-size: 0.65rem;
+      justify-content: center;
+      border-radius: 16px;
+      gap: 4px;
+    }
+    .tab-btn i { font-size: 0.8rem; }
+
+    .form-card { 
+      padding: 14px; 
+      border-radius: 20px; 
+    }
+    .form-title {
+      flex-direction: column;
+      align-items: stretch;
+      font-size: 0.95rem;
+      padding-left: 10px;
+      gap: 10px;
+    }
+    .search-box {
+      flex-wrap: wrap;
+      width: 100%;
+    }
+    .search-box input {
+      flex: 1;
+      min-width: 100px;
+      width: auto;
+      font-size: 0.75rem;
+      padding: 6px 10px;
+    }
+    .search-box button {
+      font-size: 0.65rem;
+      padding: 6px 10px;
+    }
+    .form-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .input-group label { font-size: 0.55rem; }
+    .input-group input, .input-group select { 
+      padding: 6px 8px; 
+      font-size: 0.75rem;
+      border-radius: 14px;
+    }
+
+    .calendar-header {
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 10px 12px;
+      border-radius: 20px;
+      gap: 6px;
+    }
+    .calendar-header h3 { font-size: 0.8rem; }
+    .calendar-header button { 
+      padding: 5px 12px; 
+      font-size: 0.65rem;
+      border-radius: 20px;
+    }
+
+    .calendar-grid {
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      padding: 6px 3px;
+      border-radius: 16px;
+      overflow-x: auto;
+    }
+    .calendar-day-header {
+      font-size: 0.5rem;
+      padding: 4px 0;
+    }
+    .calendar-day {
+      min-height: 90px;
+      padding: 4px 2px;
+      border-radius: 8px;
+      border-width: 1px;
+    }
+    .calendar-day-number {
+      font-size: 0.65rem;
+      margin-bottom: 3px;
+      text-align: center;
+    }
+    .calendar-day > div[style*="font-size:0.6rem"] {
+      font-size: 0.45rem !important;
+      text-align: center;
+    }
+    .calendar-event {
+      font-size: 0.45rem !important;
+      padding: 2px 3px !important;
+      border-radius: 4px;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-left-width: 2px;
+    }
+    .calendar-event strong {
+      font-size: 0.45rem;
+    }
+
+    #fechaSeleccionadaLabel { font-size: 0.65rem; }
+    .horarios-dia-admin {
+      padding: 8px;
+      gap: 4px;
+      min-height: 40px;
+      border-radius: 12px;
+    }
+    .horario-oval {
+      min-width: 44px;
+      padding: 3px 6px;
+      font-size: 0.55rem;
+      border-radius: 20px;
+      border-width: 2px;
+    }
+    .horario-oval .hora { font-size: 0.6rem; }
+    .horario-oval .estado { font-size: 0.4rem; }
+
+    .table-wrapper {
+      border-radius: 12px;
+      border-width: 1px;
+      overflow-x: auto;
+    }
+    .tabla {
+      min-width: 600px;
+      font-size: 0.6rem;
+    }
+    .tabla th {
+      padding: 6px 4px;
+      font-size: 0.55rem;
+    }
+    .tabla td {
+      padding: 6px 3px;
+      font-size: 0.55rem;
+    }
+    .tabla .badge-tamano {
+      font-size: 0.45rem;
+      padding: 1px 5px;
+    }
+    .tabla .btn-accion button {
+      font-size: 0.5rem;
+      padding: 2px 5px;
+      border-radius: 10px;
+    }
+
+    .modal-container {
+      max-width: 95%;
+      border-radius: 20px;
+    }
+    .modal-header { 
+      padding: 12px 14px;
+      font-size: 0.85rem;
+      border-radius: 20px 20px 0 0;
+    }
+    .modal-body { padding: 14px; }
+    .modal-body .datos-grid {
+      grid-template-columns: 1fr !important;
+      gap: 8px;
+    }
+    .modal-body input, .modal-body select, .modal-body textarea {
+      font-size: 0.8rem !important;
+      padding: 6px 10px !important;
+      border-radius: 14px !important;
+    }
+    .modal-footer {
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 12px;
+      gap: 8px;
+    }
+    .modal-btn {
+      font-size: 0.7rem;
+      padding: 6px 12px;
+    }
+
+    .clientes-lista { max-height: 150px; }
+    .cliente-check { 
+      font-size: 0.7rem; 
+      padding: 4px 6px; 
+      gap: 6px;
+    }
+    .cliente-check input { width: 16px; height: 16px; }
+
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .stat-card { 
+      padding: 10px; 
+      border-radius: 14px; 
+    }
+    .stat-card h4 { 
+      font-size: 0.6rem; 
+      margin-bottom: 4px;
+    }
+    .stat-number { font-size: 1.3rem; }
+    canvas { max-height: 120px !important; }
+
+    .form-carga-rapida {
+      padding: 10px;
+      border-radius: 12px;
+    }
+    .form-carga-rapida .form-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .form-carga-rapida .btn-primary {
+      font-size: 0.7rem;
+      padding: 6px 12px;
+      width: auto;
+    }
+
+    .toast-msg {
+      font-size: 0.75rem;
+      padding: 8px 14px;
+      bottom: 10px;
+      right: 10px;
+      left: 10px;
+      text-align: center;
+    }
+
+    .password-box {
+      padding: 24px 20px;
+    }
+    .password-box h3 { font-size: 1rem; }
+    .password-box p { font-size: 0.8rem; }
+    .password-box input { font-size: 0.9rem; padding: 10px; }
+    .password-box .btn-entrar { font-size: 0.9rem; padding: 10px; }
+
+    .recordatorio-box {
+      padding: 24px 20px;
+    }
+    .recordatorio-box h3 { font-size: 1rem; }
+    .recordatorio-box p { font-size: 0.85rem; }
+
+    .cliente-header { 
+      padding: 20px 12px; 
+      border-radius: 24px;
+    }
+    .cliente-header h1 { font-size: 1.5rem; }
+    .cliente-header p { font-size: 0.85rem; }
+    .cliente-card { 
+      padding: 16px; 
+      border-radius: 20px;
+    }
+    .cliente-card h2 { font-size: 1rem; }
+    .calendario-dias { gap: 4px; }
+    .dia-btn { padding: 6px 4px; border-radius: 10px; }
+    .dia-btn .dia-num { font-size: 0.9rem; }
+    .dia-btn .dia-nom { font-size: 0.55rem; }
+    .horarios-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; }
+    .horario-btn { padding: 8px; font-size: 0.75rem; border-radius: 10px; }
+    .horario-btn .hora { font-size: 0.8rem; }
+    .form-cliente input, .form-cliente textarea { 
+      padding: 10px 14px; 
+      font-size: 0.85rem; 
+      border-radius: 16px;
+    }
+    .form-cliente .btn-confirmar { 
+      padding: 12px 20px; 
+      font-size: 0.95rem; 
+    }
+    
+    .hero h2 i { font-size: 0.9rem; }
+    .btn-toggle i { font-size: 0.9rem; }
+  }
+
+  @media (max-width: 420px) {
+    .calendar-grid {
+      gap: 2px;
+      padding: 4px 2px;
+    }
+    .calendar-day {
+      min-height: 70px;
+      padding: 3px 1px;
+      border-radius: 6px;
+    }
+    .calendar-day-number { font-size: 0.5rem; }
+    .calendar-event {
+      font-size: 0.35rem !important;
+      padding: 1px 2px !important;
+      border-radius: 3px;
+      margin-top: 1px;
+      border-left-width: 2px;
+    }
+    .calendar-event strong { font-size: 0.35rem; }
+    .calendar-day > div[style*="font-size:0.6rem"] {
+      font-size: 0.35rem !important;
+    }
+    
+    .horario-oval {
+      min-width: 36px;
+      padding: 2px 4px;
+      font-size: 0.45rem;
+      border-radius: 14px;
+    }
+    .horario-oval .hora { font-size: 0.5rem; }
+    
+    .tab-btn {
+      font-size: 0.55rem;
+      padding: 6px 4px;
+      border-radius: 10px;
+    }
+    .tab-btn i { font-size: 0.65rem; }
+    
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .form-carga-rapida .form-grid {
+      grid-template-columns: 1fr;
+    }
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+    .modal-container { max-width: 98%; }
+    .modal-header h3 { font-size: 0.8rem; }
+    
+    .tabla {
+      min-width: 400px;
+      font-size: 0.5rem;
+    }
+    .tabla th, .tabla td {
+      padding: 4px 2px;
+      font-size: 0.45rem;
+    }
+    
+    .calendario-dias { gap: 2px; }
+    .dia-btn { padding: 4px 2px; border-radius: 6px; }
+    .dia-btn .dia-num { font-size: 0.7rem; }
+    .dia-btn .dia-nom { font-size: 0.45rem; }
+    .horarios-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 4px; }
+    .horario-btn { padding: 4px; font-size: 0.6rem; border-radius: 8px; }
+    .horario-btn .hora { font-size: 0.65rem; }
   }
 </style>
 </head>
@@ -847,14 +1206,14 @@
       <span class="verde">Petshop & Pelu Canina</span>
     </h2>
     <div class="hero-botones">
-      <div id="backupButtons">
-        <button class="btn-backup" onclick="descargarBackup()"><i class="fas fa-download"></i> Backup</button>
-        <button class="btn-backup restore" onclick="document.getElementById('restoreInput').click()"><i class="fas fa-upload"></i> Restaurar</button>
+      <div id="backupButtons" style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button class="btn-backup" onclick="descargarBackup()"><i class="fas fa-download"></i> <span class="btn-texto">Backup</span></button>
+        <button class="btn-backup restore" onclick="document.getElementById('restoreInput').click()"><i class="fas fa-upload"></i> <span class="btn-texto">Restaurar</span></button>
         <input type="file" id="restoreInput" accept=".zip" style="display:none" onchange="restaurarBackup(event)">
       </div>
       <span class="badge-counter" id="statusCloud"><i class="fas fa-cloud"></i> <span id="totalClientes">0</span> turnos</span>
       <button class="btn-toggle" id="btnToggleModo" onclick="toggleModo()">
-        <i class="fas fa-user-cog"></i> Modo Admin
+        <i class="fas fa-user-cog"></i> <span class="btn-texto">Modo Admin</span>
       </button>
     </div>
   </div>
@@ -875,9 +1234,9 @@
 
   <div class="admin-mode" id="adminMode">
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('clientes', this)"><i class="fas fa-users"></i> Turnos</button>
-      <button class="tab-btn" onclick="switchTab('estadisticas', this)"><i class="fas fa-chart-bar"></i> Estadísticas</button>
-      <button class="tab-btn" onclick="switchTab('recordatorios', this)"><i class="fas fa-bell"></i> Recordatorios</button>
+      <button class="tab-btn active" onclick="switchTab('clientes', this)"><i class="fas fa-users"></i> <span class="btn-texto">Turnos</span></button>
+      <button class="tab-btn" onclick="switchTab('estadisticas', this)"><i class="fas fa-chart-bar"></i> <span class="btn-texto">Estadísticas</span></button>
+      <button class="tab-btn" onclick="switchTab('recordatorios', this)"><i class="fas fa-bell"></i> <span class="btn-texto">Recordatorios</span></button>
     </div>
 
     <div id="pane-clientes" class="tab-pane active">
@@ -886,23 +1245,23 @@
           <span><i class="fas fa-calendar-alt"></i> Calendario de Turnos</span>
           <div class="search-box">
             <input type="text" id="buscarCliente" placeholder="Buscar dueño o mascota..." onkeyup="buscarCliente()">
-            <button onclick="buscarCliente()"><i class="fas fa-search"></i> Buscar</button>
-            <button onclick="limpiarBusqueda()" style="background:#b0a9a1;"><i class="fas fa-times"></i> Limpiar</button>
+            <button onclick="buscarCliente()"><i class="fas fa-search"></i> <span class="btn-texto">Buscar</span></button>
+            <button onclick="limpiarBusqueda()" style="background:#b0a9a1;"><i class="fas fa-times"></i> <span class="btn-texto">Limpiar</span></button>
           </div>
         </div>
 
         <!-- ===== CALENDARIO ===== -->
         <div class="calendar-header">
-          <button onclick="cambiarSemanaAdmin(-1)"><i class="fas fa-chevron-left"></i> Anterior</button>
+          <button onclick="cambiarSemanaAdmin(-1)"><i class="fas fa-chevron-left"></i> <span class="btn-texto">Anterior</span></button>
           <h3 id="semanaLabelAdmin"></h3>
-          <button onclick="cambiarSemanaAdmin(1)">Siguiente <i class="fas fa-chevron-right"></i></button>
+          <button onclick="cambiarSemanaAdmin(1)"><span class="btn-texto">Siguiente</span> <i class="fas fa-chevron-right"></i></button>
         </div>
         <div class="calendar-grid" id="calendarGridAdmin"></div>
-        <div style="font-size:0.65rem; color:#888; text-align:center; margin-top:8px;">
-          <span style="display:inline-block; width:14px; height:14px; background:#ffebee; border-radius:4px; vertical-align:middle; margin-right:4px; border:1px solid #c7362b;"></span> Completo
-          <span style="display:inline-block; width:14px; height:14px; background:var(--verde-muy-claro); border-radius:4px; vertical-align:middle; margin:0 4px 0 12px; border:1px solid var(--verde-medio);"></span> Disponible
-          <span style="display:inline-block; width:14px; height:14px; background:var(--naranja-muy-claro); border-radius:4px; vertical-align:middle; margin:0 4px 0 12px; border:1px solid var(--naranja-medio);"></span> Hoy
-          <span style="display:inline-block; width:14px; height:14px; background:#e3f2fd; border-radius:4px; vertical-align:middle; margin:0 4px 0 12px; border:1px solid #2196f3;"></span> Seleccionado
+        <div style="font-size:0.65rem; color:#888; text-align:center; margin-top:8px; display:flex; flex-wrap:wrap; justify-content:center; gap:6px;">
+          <span style="display:inline-flex; align-items:center;"><span style="display:inline-block; width:14px; height:14px; background:#ffebee; border-radius:4px; margin-right:4px; border:1px solid #c7362b;"></span> Completo</span>
+          <span style="display:inline-flex; align-items:center;"><span style="display:inline-block; width:14px; height:14px; background:var(--verde-muy-claro); border-radius:4px; margin-right:4px; border:1px solid var(--verde-medio);"></span> Disponible</span>
+          <span style="display:inline-flex; align-items:center;"><span style="display:inline-block; width:14px; height:14px; background:var(--naranja-muy-claro); border-radius:4px; margin-right:4px; border:1px solid var(--naranja-medio);"></span> Hoy</span>
+          <span style="display:inline-flex; align-items:center;"><span style="display:inline-block; width:14px; height:14px; background:#e3f2fd; border-radius:4px; margin-right:4px; border:1px solid #2196f3;"></span> Seleccionado</span>
         </div>
 
         <!-- ===== HORARIOS DEL DÍA SELECCIONADO ===== -->
@@ -919,10 +1278,10 @@
         <div id="formularioCargaRapida" style="display:none;">
           <div class="form-carga-rapida">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-              <span style="font-weight: 700; color: var(--verde-oscuro);">
+              <span style="font-weight: 700; color: var(--verde-oscuro); font-size:0.9rem;">
                 <i class="fas fa-plus-circle"></i> Cargando turno para <span id="fechaCargaLabel"></span> a las <span id="horaCargaLabel"></span>
               </span>
-              <button style="background: #ccc; border: none; padding: 6px 16px; border-radius: 30px; cursor: pointer; font-weight: 600;" onclick="cancelarCargaTurno()">
+              <button style="background: #ccc; border: none; padding: 6px 16px; border-radius: 30px; cursor: pointer; font-weight: 600; font-size:0.8rem;" onclick="cancelarCargaTurno()">
                 <i class="fas fa-times"></i> Cancelar
               </button>
             </div>
@@ -1023,11 +1382,14 @@ const COLECCION = 'turnos';
 const PELUQUEROS_POR_TURNO = 1;
 const HORA_CIERRE = '20:30';
 
+// Números de los peluqueros para recibir notificaciones
+const PELUQUEROS = ["5492996055561"]; // <-- Agregá los números de los 3 peluqueros acá
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ============================================================
-// ===== TAMAÑOS Y DURACIONES (CORREGIDO) =====
+// ===== TAMAÑOS Y DURACIONES =====
 // ============================================================
 const TAMAÑOS = {
     'chico': { nombre: '🐕 Chico', duracion: 60, precio: 35000, badge: 'badge-chico' },
@@ -1414,7 +1776,7 @@ function toggleModo() {
     modoActual = 'cliente';
     document.getElementById('clienteMode').classList.remove('oculto');
     document.getElementById('adminMode').classList.remove('visible');
-    document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user-cog"></i> Modo Admin';
+    document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user-cog"></i> <span class="btn-texto">Modo Admin</span>';
     backupDiv.style.display = 'none';
     renderizarCliente();
   }
@@ -1424,7 +1786,7 @@ function mostrarAdmin() {
   modoActual = 'admin';
   document.getElementById('clienteMode').classList.add('oculto');
   document.getElementById('adminMode').classList.add('visible');
-  document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user"></i> Modo Cliente';
+  document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user"></i> <span class="btn-texto">Modo Cliente</span>';
   document.getElementById('backupButtons').style.display = 'flex';
   renderizarAdmin();
 }
@@ -1887,6 +2249,8 @@ async function confirmarTurnoCliente() {
     return;
   }
 
+  const infoTamano = TAMAÑOS[tamano];
+  
   const nuevoTurno = {
     fecha: clienteSeleccionado.fecha,
     hora: clienteSeleccionado.hora,
@@ -1907,7 +2271,7 @@ async function confirmarTurnoCliente() {
 
   actualizarContadores();
 
-  const infoTamano = TAMAÑOS[tamano];
+  // ===== MENSAJE PARA EL DUEÑO =====
   const mensajeParaDueno = `🐾 *NUEVA RESERVA DE TURNO* 🐾
 
 Hola! Soy ${duenio} y acabo de reservar un turno.
@@ -1922,12 +2286,31 @@ Hola! Soy ${duenio} y acabo de reservar un turno.
 
 ¡Gracias! 🐾`;
 
+  // ===== MENSAJE PARA LOS PELUQUEROS =====
+  const mensajePeluqueros = `🐾 *NUEVA RESERVA DE TURNO* 🐾
+
+📅 Fecha: ${formatearFechaLocal(clienteSeleccionado.fecha)}
+⏰ Hora: ${clienteSeleccionado.hora}
+📏 Tamaño: ${infoTamano.nombre}
+⏱️ Duración: ${infoTamano.duracion/60} horas
+🐕 Mascota: ${mascota}
+👤 Dueño: ${duenio}
+📱 Teléfono: ${telefono}${raza ? `\n🐶 Raza: ${raza}` : ''}${obs ? `\n📝 Observaciones: ${obs}` : ''}
+
+¡Nuevo turno agendado! ✂️`;
+
   const TU_NUMERO = "5492996055561";
   const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
-  const urlWhatsApp = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensajeParaDueno)}`;
+  const urlWhatsAppDueño = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensajeParaDueno)}`;
+
+  // Enviar a los peluqueros
+  PELUQUEROS.forEach(num => {
+    const numLimpio = num.replace(/[^0-9+]/g, '');
+    window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensajePeluqueros)}`, '_blank');
+  });
 
   mostrarModalRecordatorio(() => {
-    window.open(urlWhatsApp, '_blank');
+    window.open(urlWhatsAppDueño, '_blank');
     clienteSeleccionado = { fecha: null, hora: null };
     renderizarCliente();
     renderizarAdmin();
@@ -2004,7 +2387,7 @@ function renderizarTabla() {
       <td>${estadoTexto}</td>
       <td>${indicador || '—'}</td>
       <td class="btn-accion" onclick="event.stopPropagation()">
-        <button style="background:#25D366;border:none;padding:5px 10px;border-radius:20px;color:white;cursor:pointer;margin-right:5px;" onclick="reenviarConfirmacion('${c.id}')"><i class="fab fa-whatsapp"></i> Confirmar</button>
+        <button style="background:#25D366;border:none;padding:5px 10px;border-radius:20px;color:white;cursor:pointer;margin-right:5px;" onclick="reenviarConfirmacion('${c.id}')"><i class="fab fa-whatsapp"></i> <span class="btn-texto">Confirmar</span></button>
         <button style="background:#b0a9a1;border:none;padding:5px 10px;border-radius:20px;cursor:pointer;" onclick="eliminarCliente('${c.id}')"><i class="fas fa-trash"></i></button>
       </td>
     `;
