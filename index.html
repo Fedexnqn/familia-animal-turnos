@@ -1850,8 +1850,8 @@ async function suscribirNotificaciones() {
     
     console.log('✅ OneSignal encontrado');
     
-    // Obtener el estado de suscripción (v16)
-    const isSubscribed = await OneSignal.User.PushSubscription.getOptedIn();
+    // ✅ Usamos optedIn (propiedad, no función)
+    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
     console.log('📊 Estado de suscripción:', isSubscribed);
     
     if (isSubscribed) {
@@ -1859,12 +1859,12 @@ async function suscribirNotificaciones() {
       return;
     }
     
-    // Solicitar suscripción (v16)
+    // Solicitar suscripción
     console.log('📨 Solicitando permiso...');
     await OneSignal.User.PushSubscription.setOptIn(true);
     console.log('✅ Permiso concedido');
     
-    // Obtener el User ID (v16)
+    // Obtener el User ID
     const userId = await OneSignal.User.PushSubscription.getId();
     console.log('🆔 User ID:', userId);
     
