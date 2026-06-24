@@ -1850,86 +1850,32 @@ async function suscribirNotificaciones() {
     
     console.log('✅ OneSignal encontrado');
     
-    // ✅ Primero verificamos el permiso del navegador (más compatible en móviles)
-    if (Notification.permission === 'denied') {
-      mostrarToast('❌ Los permisos de notificación están bloqueados. Habilítalos en la configuración de tu navegador.', true);
+    // Verificar si ya está suscripto (usando optedIn directamente)
+    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+    console.log('📊 Estado de suscripción:', isSubscribed);
+    
+    if (isSubscribed) {
+      mostrarToast('✅ Ya estás suscripto a las notificaciones');
       return;
     }
     
-    if (Notification.permission === 'granted') {
-      // Ya tiene permisos, intentamos suscribir
-      await OneSignal.User.PushSubscription.setOptIn(true);
-      mostrarToast('✅ Notificaciones activadas! 📱');
-      return;
-    }
+    // Intentar suscribir directamente
+    console.log('📨 Intentando suscribir...');
+    await OneSignal.User.PushSubscription.setOptIn(true);
+    console.log('✅ Suscripción exitosa');
     
-    // ✅ Si el permiso es 'default', lo solicitamos manualmente (más compatible)
-    console.log('📨 Solicitando permiso al navegador...');
-    const permissionResult = await Notification.requestPermission();
-    console.log('📊 Permiso concedido:', permissionResult);
+    // Obtener el User ID
+    const userId = await OneSignal.User.PushSubscription.getId();
+    console.log('🆔 User ID:', userId);
     
-    if (permissionResult === 'granted') {
-      await OneSignal.User.PushSubscription.setOptIn(true);
-      mostrarToast('✅ Notificaciones activadas! 📱');
-    } else {
-      mostrarToast('❌ Permiso denegado. Actívalo desde la configuración del navegador.', true);
-    }
+    mostrarToast('✅ Notificaciones activadas! 📱');
     
   } catch (error) {
-    console.error('❌ Error detallado:', error);
+    console.error('❌ Error:', error);
     console.error('❌ Mensaje:', error.message);
     
-    // ✅ Si falla setOptIn, ofrecer alternativa
-    if (error.message && error.message.includes('setOptIn')) {
-      mostrarToast('⚠️ Error al activar notificaciones. Probá "Agregar a la pantalla de inicio" la página.', true);
-    } else {
-      mostrarToast(`❌ Error: ${error.message || 'Intentá de nuevo'}`, true);
-    }
-  }
-}
-
-async function enviarNotificacionPush(turno, infoTamano) {
-  try {
-    const mensaje = `🐾 Nuevo turno: ${turno.mascota} - ${turno.duenio} a las ${turno.hora}`;
-    
-    const response = await fetch('https://onesignal.com/api/v1/notifications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
-      },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        included_segments: ['Subscribed Users'],
-        headings: { 
-          es: '🐾 Nuevo turno registrado',
-          en: '🐾 New appointment registered'
-        },
-        contents: { 
-          es: mensaje,
-          en: mensaje
-        },
-        data: {
-          turnoId: turno.id || 'nuevo',
-          fecha: turno.fecha,
-          hora: turno.hora,
-          mascota: turno.mascota
-        },
-        url: window.location.href,
-        chrome_web_icon: 'icon-192.png',
-        large_icon: 'icon-192.png'
-      })
-    });
-    
-    const resultado = await response.json();
-    console.log('📨 Notificación enviada:', resultado);
-    
-    if (resultado.errors) {
-      console.error('❌ Errores de OneSignal:', resultado.errors);
-    }
-    
-  } catch (error) {
-    console.error('❌ Error al enviar notificación:', error);
+    // Si falla, ofrecer la alternativa manual
+    mostrarToast('⚠️ Para activar notificaciones, asegurate de que la app esté instalada y recargá la página.', true);
   }
 }
 
