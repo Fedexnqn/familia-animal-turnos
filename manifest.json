@@ -2,20 +2,20 @@
   "name": "Familia Animal - Peluquería Canina",
   "short_name": "Familia Animal",
   "description": "Gestión de turnos para peluquería canina",
-  "start_url": "/index.html",
+  "start_url": "/familia-animal-turnos/index.html",
   "display": "standalone",
   "background_color": "#f5f0eb",
   "theme_color": "#D4762B",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "/familia-animal-turnos/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "/familia-animal-turnos/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
