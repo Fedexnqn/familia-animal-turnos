@@ -1269,8 +1269,8 @@
     </div>
 
     <!-- ===== BOTÓN PARA ACTIVAR NOTIFICACIONES ===== -->
-    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
-      <button class="btn-toggle" onclick="suscribirNotificaciones()" style="background: #25D366; padding: 8px 20px; font-size:0.8rem;">
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; background: #f0f8ff; padding: 10px 15px; border-radius: 16px; border: 2px solid #25D366;">
+      <button class="btn-toggle" onclick="suscribirNotificaciones()" style="background: #25D366; padding: 8px 20px; font-size:0.8rem; border: none; border-radius: 40px; color: white; font-weight: 600; cursor: pointer;">
         <i class="fas fa-bell"></i> <span class="btn-texto">Activar notificaciones</span>
       </button>
       <span style="font-size:0.7rem; color:var(--marron);">📱 Recibí alertas cuando se registre un turno</span>
@@ -1424,7 +1424,7 @@ const PELUQUEROS = ["5492996055561"];
 
 // ===== ONESIGNAL =====
 const ONESIGNAL_APP_ID = "2fea8107-546d-4f95-b9f1-7ae76aaead08";
-const ONESIGNAL_REST_API_KEY = "2gank5n5ne62fu4dmwndt6w6e"; // <-- TU REST API KEY
+const ONESIGNAL_REST_API_KEY = "2gank5n5ne62fu4dmwndt6w6e";
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -1833,7 +1833,7 @@ function mostrarAdmin() {
 }
 
 // ============================================================
-// ========== ONESIGNAL - NOTIFICACIONES PUSH =====
+// ===== ONESIGNAL - NOTIFICACIONES PUSH =====
 // ============================================================
 
 async function suscribirNotificaciones() {
