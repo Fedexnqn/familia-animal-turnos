@@ -30,25 +30,9 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "2fea8107-546d-4f95-b9f1-7ae76aaeda08",
-      serviceWorkerPath: "OneSignalSDKWorker.js",
-      serviceWorkerParam: { scope: "/" },
-      notifyButton: {
-        enable: false,
-      },
-      welcomeNotification: {
-        disable: true
-      },
-      allowLocalhostAsSecureOrigin: true
+      // OneSignal va a buscar automáticamente el service worker en la raíz
     });
     console.log('✅ OneSignal inicializado correctamente');
-    
-    // Verificar el estado inicial
-    try {
-      const isSubscribed = await OneSignal.User.PushSubscription.getOptedIn();
-      console.log('📊 Estado inicial de suscripción:', isSubscribed);
-    } catch(e) {
-      console.log('⏳ Esperando permiso del usuario...');
-    }
   });
 </script>
 
