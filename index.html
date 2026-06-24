@@ -30,7 +30,15 @@
   OneSignalDeferred.push(async function(OneSignal) {
     await OneSignal.init({
       appId: "2fea8107-546d-4f95-b9f1-7ae76aaeda08",
-      // OneSignal va a buscar automáticamente el service worker en la raíz
+      serviceWorkerPath: "/familia-animal-turnos/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/familia-animal-turnos/" },
+      notifyButton: {
+        enable: false,
+      },
+      welcomeNotification: {
+        disable: true
+      },
+      allowLocalhostAsSecureOrigin: true
     });
     console.log('✅ OneSignal inicializado correctamente');
   });
