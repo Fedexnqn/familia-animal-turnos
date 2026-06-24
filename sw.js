@@ -1,7 +1,7 @@
 // sw.js - Service Worker para PWA
 const CACHE_NAME = 'familia-animal-v2';
 const urlsToCache = [
-  '/index.html',
+  '/familia-animal-turnos/index.html',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
@@ -41,7 +41,6 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit - devolver respuesta del cache
         if (response) {
           return response;
         }
