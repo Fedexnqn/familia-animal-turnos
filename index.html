@@ -1843,12 +1843,8 @@ async function suscribirNotificaciones() {
     console.log('✅ OneSignal encontrado');
     
     // Obtener el estado de suscripción (v16)
-    const subscription = await OneSignal.User.PushSubscription;
-    console.log('📊 Estado de suscripción:', subscription);
-    
-    // Verificar si ya está suscripto (v16)
     const isSubscribed = await OneSignal.User.PushSubscription.getOptedIn();
-    console.log('📊 OptedIn:', isSubscribed);
+    console.log('📊 Estado de suscripción:', isSubscribed);
     
     if (isSubscribed) {
       mostrarToast('✅ Ya estás suscripto a las notificaciones');
