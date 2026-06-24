@@ -1850,30 +1850,41 @@ async function suscribirNotificaciones() {
     
     console.log('✅ OneSignal encontrado');
     
-    // ✅ Usamos optedIn (propiedad, no función)
-    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
-    console.log('📊 Estado de suscripción:', isSubscribed);
-    
-    if (isSubscribed) {
-      mostrarToast('✅ Ya estás suscripto a las notificaciones');
+    // ✅ Primero verificamos el permiso del navegador (más compatible en móviles)
+    if (Notification.permission === 'denied') {
+      mostrarToast('❌ Los permisos de notificación están bloqueados. Habilítalos en la configuración de tu navegador.', true);
       return;
     }
     
-    // Solicitar suscripción
-    console.log('📨 Solicitando permiso...');
-    await OneSignal.User.PushSubscription.setOptIn(true);
-    console.log('✅ Permiso concedido');
+    if (Notification.permission === 'granted') {
+      // Ya tiene permisos, intentamos suscribir
+      await OneSignal.User.PushSubscription.setOptIn(true);
+      mostrarToast('✅ Notificaciones activadas! 📱');
+      return;
+    }
     
-    // Obtener el User ID
-    const userId = await OneSignal.User.PushSubscription.getId();
-    console.log('🆔 User ID:', userId);
+    // ✅ Si el permiso es 'default', lo solicitamos manualmente (más compatible)
+    console.log('📨 Solicitando permiso al navegador...');
+    const permissionResult = await Notification.requestPermission();
+    console.log('📊 Permiso concedido:', permissionResult);
     
-    mostrarToast('✅ Notificaciones activadas! 📱');
+    if (permissionResult === 'granted') {
+      await OneSignal.User.PushSubscription.setOptIn(true);
+      mostrarToast('✅ Notificaciones activadas! 📱');
+    } else {
+      mostrarToast('❌ Permiso denegado. Actívalo desde la configuración del navegador.', true);
+    }
     
   } catch (error) {
     console.error('❌ Error detallado:', error);
     console.error('❌ Mensaje:', error.message);
-    mostrarToast(`❌ Error: ${error.message || 'Intentá de nuevo'}`, true);
+    
+    // ✅ Si falla setOptIn, ofrecer alternativa
+    if (error.message && error.message.includes('setOptIn')) {
+      mostrarToast('⚠️ Error al activar notificaciones. Probá "Agregar a la pantalla de inicio" la página.', true);
+    } else {
+      mostrarToast(`❌ Error: ${error.message || 'Intentá de nuevo'}`, true);
+    }
   }
 }
 
