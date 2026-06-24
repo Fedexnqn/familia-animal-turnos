@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 <title>🐾 Familia Animal | Petshop & Pelu Canina</title>
+
+<!-- ===== PWA ===== -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+
 <!-- Font Awesome 6 -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <!-- Chart.js -->
@@ -14,6 +22,27 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+<!-- ===== ONESIGNAL ===== -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "2fea8107-546d-4f95-b9f1-7ae76aaead08",
+      serviceWorkerPath: "OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/" },
+      notifyButton: {
+        enable: false,
+      },
+      welcomeNotification: {
+        disable: true
+      }
+    });
+    console.log('✅ OneSignal inicializado');
+  });
+</script>
+
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif; }
   body { background: linear-gradient(145deg, #f5f0eb 0%, #e8e0d8 100%); padding: 20px; min-height: 100vh; }
@@ -1239,6 +1268,14 @@
       <button class="tab-btn" onclick="switchTab('recordatorios', this)"><i class="fas fa-bell"></i> <span class="btn-texto">Recordatorios</span></button>
     </div>
 
+    <!-- ===== BOTÓN PARA ACTIVAR NOTIFICACIONES ===== -->
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+      <button class="btn-toggle" onclick="suscribirNotificaciones()" style="background: #25D366; padding: 8px 20px; font-size:0.8rem;">
+        <i class="fas fa-bell"></i> <span class="btn-texto">Activar notificaciones</span>
+      </button>
+      <span style="font-size:0.7rem; color:var(--marron);">📱 Recibí alertas cuando se registre un turno</span>
+    </div>
+
     <div id="pane-clientes" class="tab-pane active">
       <div class="form-card">
         <div class="form-title">
@@ -1382,8 +1419,12 @@ const COLECCION = 'turnos';
 const PELUQUEROS_POR_TURNO = 1;
 const HORA_CIERRE = '20:30';
 
-// Números de los peluqueros para recibir notificaciones
-const PELUQUEROS = ["5492996055561"]; // <-- Agregá los números de los 3 peluqueros acá
+// Números de los peluqueros para recibir notificaciones por WhatsApp
+const PELUQUEROS = ["5492996055561"];
+
+// ===== ONESIGNAL =====
+const ONESIGNAL_APP_ID = "2fea8107-546d-4f95-b9f1-7ae76aaead08";
+const ONESIGNAL_REST_API_KEY = "2gank5n5ne62fu4dmwndt6w6e"; // <-- TU REST API KEY
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -1789,6 +1830,82 @@ function mostrarAdmin() {
   document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user"></i> <span class="btn-texto">Modo Cliente</span>';
   document.getElementById('backupButtons').style.display = 'flex';
   renderizarAdmin();
+}
+
+// ============================================================
+// ========== ONESIGNAL - NOTIFICACIONES PUSH =====
+// ============================================================
+
+async function suscribirNotificaciones() {
+  try {
+    const OneSignal = window.OneSignal;
+    if (!OneSignal) {
+      mostrarToast('❌ OneSignal no está cargado. Recargá la página.', true);
+      return;
+    }
+    
+    const isSubscribed = await OneSignal.User.PushSubscription.getOptedIn();
+    
+    if (isSubscribed) {
+      mostrarToast('✅ Ya estás suscripto a las notificaciones');
+      return;
+    }
+    
+    await OneSignal.User.PushSubscription.setOptIn(true);
+    mostrarToast('✅ Notificaciones activadas! 📱');
+    
+    const userId = await OneSignal.User.PushSubscription.getId();
+    console.log('🆔 User ID:', userId);
+    
+  } catch (error) {
+    console.error('❌ Error al suscribir:', error);
+    mostrarToast('❌ Error al activar notificaciones. Intentá de nuevo.', true);
+  }
+}
+
+async function enviarNotificacionPush(turno, infoTamano) {
+  try {
+    const mensaje = `🐾 Nuevo turno: ${turno.mascota} - ${turno.duenio} a las ${turno.hora}`;
+    
+    const response = await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Authorization': `Basic ${ONESIGNAL_REST_API_KEY}`
+      },
+      body: JSON.stringify({
+        app_id: ONESIGNAL_APP_ID,
+        included_segments: ['Subscribed Users'],
+        headings: { 
+          es: '🐾 Nuevo turno registrado',
+          en: '🐾 New appointment registered'
+        },
+        contents: { 
+          es: mensaje,
+          en: mensaje
+        },
+        data: {
+          turnoId: turno.id || 'nuevo',
+          fecha: turno.fecha,
+          hora: turno.hora,
+          mascota: turno.mascota
+        },
+        url: window.location.href,
+        chrome_web_icon: 'icon-192.png',
+        large_icon: 'icon-192.png'
+      })
+    });
+    
+    const resultado = await response.json();
+    console.log('📨 Notificación enviada:', resultado);
+    
+    if (resultado.errors) {
+      console.error('❌ Errores de OneSignal:', resultado.errors);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error al enviar notificación:', error);
+  }
 }
 
 // ============================================================
@@ -2286,7 +2403,7 @@ Hola! Soy ${duenio} y acabo de reservar un turno.
 
 ¡Gracias! 🐾`;
 
-  // ===== MENSAJE PARA LOS PELUQUEROS =====
+  // ===== MENSAJE PARA LOS PELUQUEROS (WhatsApp) =====
   const mensajePeluqueros = `🐾 *NUEVA RESERVA DE TURNO* 🐾
 
 📅 Fecha: ${formatearFechaLocal(clienteSeleccionado.fecha)}
@@ -2299,11 +2416,14 @@ Hola! Soy ${duenio} y acabo de reservar un turno.
 
 ¡Nuevo turno agendado! ✂️`;
 
+  // ===== ENVIAR NOTIFICACIÓN PUSH =====
+  await enviarNotificacionPush(nuevoTurno, infoTamano);
+
   const TU_NUMERO = "5492996055561";
   const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
   const urlWhatsAppDueño = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensajeParaDueno)}`;
 
-  // Enviar a los peluqueros
+  // Enviar WhatsApp a los peluqueros
   PELUQUEROS.forEach(num => {
     const numLimpio = num.replace(/[^0-9+]/g, '');
     window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensajePeluqueros)}`, '_blank');
