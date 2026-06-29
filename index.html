@@ -2540,7 +2540,7 @@ function reenviarConfirmacion(id) {
   if (cliente && cliente.telefono) {
     const infoTamano = TAMAÑOS[cliente.tamano] || TAMAÑOS['chico'];
     
-    // 📝 NUEVO MENSAJE PARA ADMIN (en tercera persona)
+    // 📝 MENSAJE PARA ADMIN (en tercera persona)
     const mensaje = `🐾 *Confirmación de turno - Familia Animal* 🐾
 
 Hola ${cliente.duenio}, te confirmamos tu turno para ${cliente.mascota}.
@@ -2555,8 +2555,8 @@ Hola ${cliente.duenio}, te confirmamos tu turno para ${cliente.mascota}.
 
 ¡Te esperamos! Cualquier cambio, avisanos con anticipación. ✂️`;
 
-    const TU_NUMERO = "5492996055561";
-    const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
+    // ✅ CORREGIDO: Usar el teléfono del cliente
+    const telefonoLimpio = cliente.telefono.replace(/[^0-9+]/g, '');
     window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   } else {
     mostrarToast("⚠️ Cliente sin número de teléfono", true);
@@ -2670,9 +2670,9 @@ function abrirModalCliente(id) {
 function reenviarConfirmacionModal() {
   if (clienteModalActual && clienteModalActual.telefono) {
     const infoTamano = TAMAÑOS[clienteModalActual.tamano] || TAMAÑOS['chico'];
-    const mensaje = `🐾 *NUEVA RESERVA DE TURNO* 🐾
+    const mensaje = `🐾 *Confirmación de turno - Familia Animal* 🐾
 
-Hola! Soy ${clienteModalActual.duenio} y acabo de reservar un turno.
+Hola ${clienteModalActual.duenio}, te confirmamos tu turno para ${clienteModalActual.mascota}.
 
 📅 Fecha: ${formatearFechaLocal(clienteModalActual.fecha)}
 ⏰ Hora: ${clienteModalActual.hora || '10:00'}
@@ -2682,9 +2682,10 @@ Hola! Soy ${clienteModalActual.duenio} y acabo de reservar un turno.
 👤 Dueño: ${clienteModalActual.duenio}
 📱 Teléfono: ${clienteModalActual.telefono}${clienteModalActual.raza ? `\n🐶 Raza: ${clienteModalActual.raza}` : ''}${clienteModalActual.observaciones ? `\n📝 Observaciones: ${clienteModalActual.observaciones}` : ''}
 
-¡Gracias! 🐾`;
-    const TU_NUMERO = "5492996055561";
-    const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
+¡Te esperamos! Cualquier cambio, avisanos con anticipación. ✂️`;
+
+    // ✅ CORREGIDO: Usar el teléfono del cliente
+    const telefonoLimpio = clienteModalActual.telefono.replace(/[^0-9+]/g, '');
     window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   } else {
     mostrarToast("⚠️ Cliente sin número de teléfono", true);
