@@ -2410,19 +2410,18 @@ async function confirmarTurnoCliente() {
   actualizarContadores();
 
   // ===== MENSAJE PARA EL DUEÑO =====
-  const mensajeParaDueno = `🐾 *NUEVA RESERVA DE TURNO* 🐾
-
-Hola! Soy ${duenio} y acabo de reservar un turno.
+ // Dentro de confirmarTurnoCliente()
+// Dentro de confirmarTurnoCliente()
+const mensajeParaDueno = `🐾 *¡Hola! Soy ${duenio} y acabo de reservar un turno en Familia Animal!* 🐾
 
 📅 Fecha: ${formatearFechaLocal(clienteSeleccionado.fecha)}
 ⏰ Hora: ${clienteSeleccionado.hora}
 📏 Tamaño: ${infoTamano.nombre}
-⏱️ Duración: ${infoTamano.duracion/60} horas
 🐕 Mascota: ${mascota}
 👤 Dueño: ${duenio}
 📱 Teléfono: ${telefono}${raza ? `\n🐶 Raza: ${raza}` : ''}${obs ? `\n📝 Observaciones: ${obs}` : ''}
 
-¡Gracias! 🐾`;
+¡Gracias por confirmar! 🐾`;
 
   // ===== MENSAJE PARA LOS PELUQUEROS (WhatsApp) =====
   const mensajePeluqueros = `🐾 *NUEVA RESERVA DE TURNO* 🐾
@@ -2540,9 +2539,11 @@ function reenviarConfirmacion(id) {
   const cliente = clientes.find(c => c.id === id);
   if (cliente && cliente.telefono) {
     const infoTamano = TAMAÑOS[cliente.tamano] || TAMAÑOS['chico'];
-    const mensaje = `🐾 *NUEVA RESERVA DE TURNO* 🐾
+    
+    // 📝 NUEVO MENSAJE PARA ADMIN (en tercera persona)
+    const mensaje = `🐾 *Confirmación de turno - Familia Animal* 🐾
 
-Hola! Soy ${cliente.duenio} y acabo de reservar un turno.
+Hola ${cliente.duenio}, te confirmamos tu turno para ${cliente.mascota}.
 
 📅 Fecha: ${formatearFechaLocal(cliente.fecha)}
 ⏰ Hora: ${cliente.hora || '10:00'}
@@ -2552,13 +2553,44 @@ Hola! Soy ${cliente.duenio} y acabo de reservar un turno.
 👤 Dueño: ${cliente.duenio}
 📱 Teléfono: ${cliente.telefono}${cliente.raza ? `\n🐶 Raza: ${cliente.raza}` : ''}${cliente.observaciones ? `\n📝 Observaciones: ${cliente.observaciones}` : ''}
 
-¡Gracias! 🐾`;
+¡Te esperamos! Cualquier cambio, avisanos con anticipación. ✂️`;
+
     const TU_NUMERO = "5492996055561";
     const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
     window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   } else {
     mostrarToast("⚠️ Cliente sin número de teléfono", true);
   }
+}
+function reenviarConfirmacion(id) {
+  // ... código existente ...
+}
+
+// 👇 PEGÁ LA NUEVA FUNCIÓN ACÁ (justo después de reenviarConfirmacion)
+async function notificarModificacion(cliente) {
+  if (!cliente || !cliente.telefono) {
+    mostrarToast("⚠️ Cliente sin número de teléfono para notificar", true);
+    return;
+  }
+
+  const infoTamano = TAMAÑOS[cliente.tamano] || TAMAÑOS['chico'];
+  
+  // 📝 MENSAJE ESPECÍFICO PARA MODIFICACIONES
+  const mensaje = `🔔 *Modificación de turno - Familia Animal* 🔔
+
+Hola ${cliente.duenio}, te informamos que tu turno ha sido modificado.
+
+✅ *Nuevos datos del turno:*
+📅 Fecha: ${formatearFechaLocal(cliente.fecha)}
+⏰ Hora: ${cliente.hora || '10:00'}
+📏 Tamaño: ${infoTamano.nombre}
+⏱️ Duración: ${infoTamano.duracion/60} horas
+🐕 Mascota: ${cliente.mascota}${cliente.observaciones ? `\n📝 Observaciones: ${cliente.observaciones}` : ''}
+
+Por favor, confirmá que recibiste esta información. ¡Gracias! 🐾`;
+
+  const telefonoLimpio = cliente.telefono.replace(/[^0-9+]/g, '');
+  window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
 }
 
 function buscarCliente() { renderizarTabla(); }
@@ -2709,6 +2741,8 @@ function ampliarFoto(url) {
 
 async function guardarModal() {
   if (!clienteModalActual) return;
+  
+  // Guardar los datos del modal en el objeto clienteModalActual
   clienteModalActual.duenio = document.getElementById('modalDuenio').value;
   clienteModalActual.mascota = document.getElementById('modalMascota').value;
   clienteModalActual.raza = document.getElementById('modalRaza').value;
@@ -2722,11 +2756,17 @@ async function guardarModal() {
   const guardado = await guardarTurnoFirestore(clienteModalActual);
   if (guardado) {
     document.querySelector('.modal-overlay')?.remove();
-    mostrarToast("Cambios guardados");
+    mostrarToast("✅ Cambios guardados");
+    
+    // 👇 NUEVA PREGUNTA: ¿Notificar al cliente?
+    const notificar = confirm("📱 ¿Quieres notificar al cliente sobre la modificación del turno?");
+    if (notificar) {
+      await notificarModificacion(clienteModalActual);
+    }
+    
     renderizarAdmin();
   }
 }
-
 // ============================================================
 // ========== ADMIN: ESTADÍSTICAS ==========
 // ============================================================
