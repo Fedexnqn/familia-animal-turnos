@@ -1524,22 +1524,25 @@ function obtenerHoraMinimaReserva() {
 // ===== OBTENER HORARIOS DISPONIBLES =====
 // ============================================================
 function obtenerHorariosDisponibles(fecha, duracionMinutos = 60) {
-    // 🔴 Si es domingo, devolver array vacío (sin horarios)
-    const fechaObj = new Date(fecha + 'T00:00:00');
+    // Verificar que no sea domingo
+    const fechaObj = new Date(fecha + 'T12:00:00');
     if (fechaObj.getDay() === 0) {
-        return [];}
-
+        return [];
+    }
+    
     const turnosDia = clientes.filter(c => c.fecha === fecha);
 
-    const hoy = new Date().toISOString().slice(0,10);
-    const horaMinima = fecha === hoy ? obtenerHoraMinimaReserva() : '00:00';
+    const hoy = new Date();
+    hoy.setHours(12, 0, 0, 0);
+    const hoyStr = hoy.toISOString().slice(0,10);
+    const horaMinima = fecha === hoyStr ? obtenerHoraMinimaReserva() : '00:00';
 
     return HORARIOS_BASE.map(hora => {
         const horaFin = sumarMinutos(hora, duracionMinutos);
         let ocupado = false;
         let motivo = '';
 
-        if (fecha === hoy && compararHoras(hora, horaMinima) < 0) {
+        if (fecha === hoyStr && compararHoras(hora, horaMinima) < 0) {
             ocupado = true;
             motivo = '⏳ 2hs de anticipación';
             return { hora, ocupado, motivo };
@@ -1558,7 +1561,7 @@ function obtenerHorariosDisponibles(fecha, duracionMinutos = 60) {
             
             if (compararHoras(hora, fin) < 0 && compararHoras(horaFin, inicio) > 0) {
                 ocupado = true;
-                motivo = `❌ Ocupado`;
+                motivo = '❌ Ocupado';
                 return { hora, ocupado, motivo };
             }
         }
@@ -1576,19 +1579,23 @@ function obtenerHorariosDisponibles(fecha, duracionMinutos = 60) {
 function obtenerDiasDisponibles() {
     const dias = [];
     const hoy = new Date();
+    // Ajustar la hora a las 12:00 para evitar problemas de zona horaria
+    hoy.setHours(12, 0, 0, 0);
+    
     const capacidadTotal = PELUQUEROS_POR_TURNO * HORARIOS_BASE.length;
 
     let diasAgregados = 0;
     let i = 0;
     
-    // Seguimos agregando días hasta tener 14 días hábiles (excluyendo domingos)
     while (diasAgregados < 14) {
         const dia = new Date(hoy);
         dia.setDate(hoy.getDate() + i);
-        const diaStr = dia.toISOString().slice(0,10);
-        const diaSemana = dia.getDay(); // 0 = Domingo, 1 = Lunes, ...
+        // Asegurar que la hora sea 12:00
+        dia.setHours(12, 0, 0, 0);
         
-        // 🔴 EXCLUIR DOMINGOS (día 0)
+        const diaStr = dia.toISOString().slice(0,10);
+        const diaSemana = dia.getDay();
+        
         if (diaSemana !== 0) {
             const turnosDia = clientes.filter(c => c.fecha === diaStr);
             
@@ -2135,15 +2142,20 @@ function renderizarCalendarioAdmin() {
     const grid = document.getElementById("calendarGridAdmin");
     if (!grid) return;
     
-    let fecha = new Date();
     const hoy = new Date();
+    hoy.setHours(12, 0, 0, 0);
+    
+    let fecha = new Date(hoy);
     fecha.setDate(fecha.getDate() + semanaOffsetAdmin * 7);
     
     const inicio = new Date(fecha);
     inicio.setDate(fecha.getDate() - fecha.getDay());
+    inicio.setHours(12, 0, 0, 0);
     
     const finSemana = new Date(inicio);
     finSemana.setDate(inicio.getDate() + 6);
+    finSemana.setHours(12, 0, 0, 0);
+    
     document.getElementById("semanaLabelAdmin").innerHTML = 
         `${inicio.toLocaleDateString()} - ${finSemana.toLocaleDateString()}`;
     
@@ -2155,6 +2167,8 @@ function renderizarCalendarioAdmin() {
     for (let i = 0; i < 7; i++) {
         let dia = new Date(inicio);
         dia.setDate(inicio.getDate() + i);
+        dia.setHours(12, 0, 0, 0);
+        
         let diaStr = dia.toISOString().slice(0,10);
         let eventos = clientes.filter(c => c.fecha === diaStr);
         const esHoy = diaStr === hoy.toISOString().slice(0,10);
@@ -2852,6 +2866,33 @@ function switchTab(tab, btn) {
 // ============================================================
 // ========== INICIALIZACIÓN ==========
 // ============================================================
+// ============================================================
+// ===== SELECCIONAR DÍA Y HORA (MODO CLIENTE) =====
+// ============================================================
+
+function seleccionarDiaCliente(fecha) {
+    const fechaObj = new Date(fecha + 'T12:00:00');
+    if (fechaObj.getDay() === 0) {
+        mostrarToast('❌ Los domingos no trabajamos. Elegí otro día.', true);
+        return;
+    }
+    
+    clienteSeleccionado.fecha = fecha;
+    clienteSeleccionado.hora = null;
+    renderizarCliente();
+}
+
+function seleccionarHoraCliente(hora) {
+    clienteSeleccionado.hora = hora;
+    renderizarCliente();
+}
+
+// 👇 ESTO YA DEBE EXISTIR EN TU CÓDIGO
+async function init() {
+    await cargarTurnosFirestore();
+    // ... resto del código
+}
+
 async function init() {
   await cargarTurnosFirestore();
   
