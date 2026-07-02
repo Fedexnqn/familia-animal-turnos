@@ -1577,6 +1577,13 @@ function obtenerDiasDisponibles() {
         const dia = new Date(hoy);
         dia.setDate(hoy.getDate() + i);
         const diaStr = dia.toISOString().slice(0,10);
+        const diaSemana = dia.getDay(); // 0 = Domingo, 1 = Lunes, ...
+        
+        // 🔴 EXCLUIR DOMINGOS (día 0)
+        if (diaSemana === 0) {
+            continue; // Saltamos al siguiente día sin agregarlo
+        }
+        
         const turnosDia = clientes.filter(c => c.fecha === diaStr);
         
         let tiempoOcupado = 0;
@@ -2009,24 +2016,19 @@ function renderizarCliente() {
             <h2><i class="fas fa-calendar-day" style="color: var(--naranja-medio);"></i> Seleccioná un día</h2>
             <div class="calendario-dias">
     `;
-   dias.forEach(d => {
-    // 🔴 Saltamos los domingos (no se muestran en el modo cliente)
-    if (d.diaSemana === 'Domingo') {
-        return; // No genera el HTML para este día
-    }
-    
-    html += `
-        <div class="dia-btn ${clienteSeleccionado.fecha === d.fecha ? 'seleccionado' : ''}" 
-             onclick="seleccionarDiaCliente('${d.fecha}')"
-             style="${!d.disponible ? 'opacity:0.4;' : ''}">
-            <div class="dia-num">${d.dia}</div>
-            <div class="dia-nom">${d.diaSemana.substring(0,3)}</div>
-            <div style="font-size:0.6rem; margin-top:4px; color:${d.disponible ? 'var(--verde-oscuro)' : '#999'}">
-                ${d.disponible ? '✅ ' + Math.round((480 - d.tiempoOcupado)/60) + ' hs libres' : '🔴 Completos'}
+    dias.forEach(d => {
+        html += `
+            <div class="dia-btn ${clienteSeleccionado.fecha === d.fecha ? 'seleccionado' : ''}" 
+                 onclick="seleccionarDiaCliente('${d.fecha}')"
+                 style="${!d.disponible ? 'opacity:0.4;' : ''}">
+                <div class="dia-num">${d.dia}</div>
+                <div class="dia-nom">${d.diaSemana.substring(0,3)}</div>
+                <div style="font-size:0.6rem; margin-top:4px; color:${d.disponible ? 'var(--verde-oscuro)' : '#999'}">
+                    ${d.disponible ? '✅ ' + Math.round((480 - d.tiempoOcupado)/60) + ' hs libres' : '🔴 Completos'}
+                </div>
             </div>
-        </div>
-    `;
-});
+        `;
+    });
     html += `
             </div>
             <div style="margin-top: 10px; font-size: 0.8rem; color: #888;">
