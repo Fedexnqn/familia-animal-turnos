@@ -1528,6 +1528,7 @@ function obtenerHorariosDisponibles(fecha, duracionMinutos = 60) {
     const fechaObj = new Date(fecha + 'T00:00:00');
     if (fechaObj.getDay() === 0) {
         return [];
+    }  
     const turnosDia = clientes.filter(c => c.fecha === fecha);
 
     const hoy = new Date().toISOString().slice(0,10);
