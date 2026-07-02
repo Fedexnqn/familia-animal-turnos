@@ -1579,7 +1579,6 @@ function obtenerHorariosDisponibles(fecha, duracionMinutos = 60) {
 function obtenerDiasDisponibles() {
     const dias = [];
     const hoy = new Date();
-    // Ajustar la hora a las 12:00 para evitar problemas de zona horaria
     hoy.setHours(12, 0, 0, 0);
     
     const capacidadTotal = PELUQUEROS_POR_TURNO * HORARIOS_BASE.length;
@@ -1590,7 +1589,6 @@ function obtenerDiasDisponibles() {
     while (diasAgregados < 14) {
         const dia = new Date(hoy);
         dia.setDate(hoy.getDate() + i);
-        // Asegurar que la hora sea 12:00
         dia.setHours(12, 0, 0, 0);
         
         const diaStr = dia.toISOString().slice(0,10);
@@ -1621,6 +1619,35 @@ function obtenerDiasDisponibles() {
         i++;
     }
     return dias;
+}
+
+function seleccionarDiaCliente(fecha) {
+    const fechaObj = new Date(fecha + 'T12:00:00');
+    if (fechaObj.getDay() === 0) {
+        mostrarToast('❌ Los domingos no trabajamos. Elegí otro día.', true);
+        return;
+    }
+    
+    clienteSeleccionado.fecha = fecha;
+    clienteSeleccionado.hora = null;
+    renderizarCliente();
+}
+
+function seleccionarHoraCliente(hora) {
+    clienteSeleccionado.hora = hora;
+    renderizarCliente();
+}
+
+function actualizarDuracionYHorarios() {
+    const select = document.getElementById('clienteTamano');
+    const duracionSpan = document.getElementById('clienteDuracion');
+    if (select && duracionSpan) {
+        const tamano = select.value;
+        clienteTamanoSeleccionado = tamano;
+        const info = TAMAÑOS[tamano];
+        duracionSpan.textContent = info.duracion / 60 + ' horas';
+        renderizarCliente();
+    }
 }
 
 // ============================================================
@@ -1874,7 +1901,6 @@ async function suscribirNotificaciones() {
     
     console.log('✅ OneSignal encontrado');
     
-    // Verificar si ya está suscripto (usando optedIn directamente)
     const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
     console.log('📊 Estado de suscripción:', isSubscribed);
     
@@ -1883,12 +1909,10 @@ async function suscribirNotificaciones() {
       return;
     }
     
-    // Intentar suscribir directamente
     console.log('📨 Intentando suscribir...');
     await OneSignal.User.PushSubscription.setOptIn(true);
     console.log('✅ Suscripción exitosa');
     
-    // Obtener el User ID
     const userId = await OneSignal.User.PushSubscription.getId();
     console.log('🆔 User ID:', userId);
     
@@ -1897,8 +1921,6 @@ async function suscribirNotificaciones() {
   } catch (error) {
     console.error('❌ Error:', error);
     console.error('❌ Mensaje:', error.message);
-    
-    // Si falla, ofrecer la alternativa manual
     mostrarToast('⚠️ Para activar notificaciones, asegurate de que la app esté instalada y recargá la página.', true);
   }
 }
@@ -2436,9 +2458,7 @@ async function confirmarTurnoCliente() {
   actualizarContadores();
 
   // ===== MENSAJE PARA EL DUEÑO =====
- // Dentro de confirmarTurnoCliente()
-// Dentro de confirmarTurnoCliente()
-const mensajeParaDueno = `🐾 *¡Hola! Soy ${duenio} y acabo de reservar un turno en Familia Animal!* 🐾
+  const mensajeParaDueno = `🐾 *¡Hola! Soy ${duenio} y acabo de reservar un turno en Familia Animal!* 🐾
 
 📅 Fecha: ${formatearFechaLocal(clienteSeleccionado.fecha)}
 ⏰ Hora: ${clienteSeleccionado.hora}
@@ -2589,7 +2609,7 @@ Hola ${cliente.duenio}, te confirmamos tu turno para ${cliente.mascota}.
   }
 }
 
-// 👇 PEGÁ LA NUEVA FUNCIÓN ACÁ (justo después de reenviarConfirmacion)
+// ===== NOTIFICAR MODIFICACIÓN =====
 async function notificarModificacion(cliente) {
   if (!cliente || !cliente.telefono) {
     mostrarToast("⚠️ Cliente sin número de teléfono para notificar", true);
@@ -2598,7 +2618,6 @@ async function notificarModificacion(cliente) {
 
   const infoTamano = TAMAÑOS[cliente.tamano] || TAMAÑOS['chico'];
   
-  // 📝 MENSAJE ESPECÍFICO PARA MODIFICACIONES
   const mensaje = `🔔 *Modificación de turno - Familia Animal* 🔔
 
 Hola ${cliente.duenio}, te informamos que tu turno ha sido modificado.
@@ -2791,6 +2810,7 @@ async function guardarModal() {
     renderizarAdmin();
   }
 }
+
 // ============================================================
 // ========== ADMIN: ESTADÍSTICAS ==========
 // ============================================================
@@ -2861,82 +2881,6 @@ function switchTab(tab, btn) {
   if (tab === 'estadisticas') renderizarEstadisticas();
   if (tab === 'recordatorios') renderizarListaRecordatorios();
   if (tab === 'clientes') renderizarTabla();
-}
-
-// ============================================================
-// ========== INICIALIZACIÓN ==========
-// ============================================================
-// ============================================================
-// ===== SELECCIONAR DÍA Y HORA (MODO CLIENTE) =====
-// ============================================================
-
-function seleccionarDiaCliente(fecha) {
-    const fechaObj = new Date(fecha + 'T12:00:00');
-    if (fechaObj.getDay() === 0) {
-        mostrarToast('❌ Los domingos no trabajamos. Elegí otro día.', true);
-        return;
-    }
-    
-    clienteSeleccionado.fecha = fecha;
-    clienteSeleccionado.hora = null;
-    renderizarCliente();
-}
-
-function seleccionarHoraCliente(hora) {
-    clienteSeleccionado.hora = hora;
-    renderizarCliente();
-}
-
-// 👇 ESTO YA DEBE EXISTIR EN TU CÓDIGO
-async function init() {
-    await cargarTurnosFirestore();
-    // ... resto del código
-}
-
-async function init() {
-  await cargarTurnosFirestore();
-  
-  const hoy = new Date().toISOString().slice(0,10);
-  document.getElementById('fechaAdmin').value = hoy;
-  
-  document.getElementById('clienteMode').classList.remove('oculto');
-  document.getElementById('adminMode').classList.remove('visible');
-  document.getElementById('backupButtons').style.display = 'none';
-  
-  renderizarAdmin();
-  renderizarCliente();
-  
-  document.getElementById('passwordModal').classList.remove('visible');
-  
-  db.collection(COLECCION).onSnapshot(() => {
-    console.log('🔄 Cambios detectados en Firestore');
-    cargarTurnosFirestore().then(() => {
-      if (modoActual === 'admin') {
-        renderizarAdmin();
-      } else {
-        renderizarCliente();
-      }
-    });
-  });
-  
-  mostrarToast('✅ Conectado a la nube');
-}
-
-function actualizarDuracionYHorarios() {
-    const select = document.getElementById('clienteTamano');
-    const duracionSpan = document.getElementById('clienteDuracion');
-    if (select && duracionSpan) {
-        const tamano = select.value;
-        clienteTamanoSeleccionado = tamano;
-        const info = TAMAÑOS[tamano];
-        duracionSpan.textContent = info.duracion / 60 + ' horas';
-        renderizarCliente();
-    }
-}
-
-function seleccionarHoraCliente(hora) {
-    clienteSeleccionado.hora = hora;
-    renderizarCliente();
 }
 
 // ============================================================
