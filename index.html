@@ -1524,6 +1524,10 @@ function obtenerHoraMinimaReserva() {
 // ===== OBTENER HORARIOS DISPONIBLES =====
 // ============================================================
 function obtenerHorariosDisponibles(fecha, duracionMinutos = 60) {
+    // 🔴 Si es domingo, devolver array vacío (sin horarios)
+    const fechaObj = new Date(fecha + 'T00:00:00');
+    if (fechaObj.getDay() === 0) {
+        return [];
     const turnosDia = clientes.filter(c => c.fecha === fecha);
 
     const hoy = new Date().toISOString().slice(0,10);
@@ -1573,35 +1577,40 @@ function obtenerDiasDisponibles() {
     const hoy = new Date();
     const capacidadTotal = PELUQUEROS_POR_TURNO * HORARIOS_BASE.length;
 
-    for (let i = 0; i < 14; i++) {
+    let diasAgregados = 0;
+    let i = 0;
+    
+    // Seguimos agregando días hasta tener 14 días hábiles (excluyendo domingos)
+    while (diasAgregados < 14) {
         const dia = new Date(hoy);
         dia.setDate(hoy.getDate() + i);
         const diaStr = dia.toISOString().slice(0,10);
         const diaSemana = dia.getDay(); // 0 = Domingo, 1 = Lunes, ...
         
         // 🔴 EXCLUIR DOMINGOS (día 0)
-        if (diaSemana === 0) {
-            continue; // Saltamos al siguiente día sin agregarlo
+        if (diaSemana !== 0) {
+            const turnosDia = clientes.filter(c => c.fecha === diaStr);
+            
+            let tiempoOcupado = 0;
+            turnosDia.forEach(c => {
+                tiempoOcupado += TAMAÑOS[c.tamano]?.duracion || 60;
+            });
+
+            const disponible = turnosDia.length < capacidadTotal;
+
+            dias.push({
+                fecha: diaStr,
+                dia: dia.getDate(),
+                mes: dia.getMonth() + 1,
+                diaSemana: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dia.getDay()],
+                turnos: turnosDia.length,
+                tiempoOcupado: tiempoOcupado,
+                disponible: disponible
+            });
+            
+            diasAgregados++;
         }
-        
-        const turnosDia = clientes.filter(c => c.fecha === diaStr);
-        
-        let tiempoOcupado = 0;
-        turnosDia.forEach(c => {
-            tiempoOcupado += TAMAÑOS[c.tamano]?.duracion || 60;
-        });
-
-        const disponible = turnosDia.length < capacidadTotal;
-
-        dias.push({
-            fecha: diaStr,
-            dia: dia.getDate(),
-            mes: dia.getMonth() + 1,
-            diaSemana: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][dia.getDay()],
-            turnos: turnosDia.length,
-            tiempoOcupado: tiempoOcupado,
-            disponible: disponible
-        });
+        i++;
     }
     return dias;
 }
@@ -2884,6 +2893,13 @@ function actualizarDuracionYHorarios() {
 }
 
 function seleccionarDiaCliente(fecha) {
+    // Verificar que no sea domingo
+    const fechaObj = new Date(fecha + 'T00:00:00');
+    if (fechaObj.getDay() === 0) {
+        mostrarToast('❌ Los domingos no trabajamos. Elegí otro día.', true);
+        return;
+    }
+    
     clienteSeleccionado.fecha = fecha;
     clienteSeleccionado.hora = null;
     renderizarCliente();
