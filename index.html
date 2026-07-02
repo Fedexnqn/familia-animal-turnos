@@ -1527,8 +1527,8 @@ function obtenerHorariosDisponibles(fecha, duracionMinutos = 60) {
     // 🔴 Si es domingo, devolver array vacío (sin horarios)
     const fechaObj = new Date(fecha + 'T00:00:00');
     if (fechaObj.getDay() === 0) {
-        return [];
-    }  
+        return [];}
+
     const turnosDia = clientes.filter(c => c.fecha === fecha);
 
     const hoy = new Date().toISOString().slice(0,10);
@@ -2893,22 +2893,41 @@ function actualizarDuracionYHorarios() {
     }
 }
 
-function seleccionarDiaCliente(fecha) {
-    // Verificar que no sea domingo
-    const fechaObj = new Date(fecha + 'T00:00:00');
-    if (fechaObj.getDay() === 0) {
-        mostrarToast('❌ Los domingos no trabajamos. Elegí otro día.', true);
-        return;
-    }
-    
-    clienteSeleccionado.fecha = fecha;
-    clienteSeleccionado.hora = null;
-    renderizarCliente();
-}
-
 function seleccionarHoraCliente(hora) {
     clienteSeleccionado.hora = hora;
     renderizarCliente();
+}
+
+// ============================================================
+// ========== INICIALIZACIÓN ==========
+// ============================================================
+async function init() {
+  await cargarTurnosFirestore();
+  
+  const hoy = new Date().toISOString().slice(0,10);
+  document.getElementById('fechaAdmin').value = hoy;
+  
+  document.getElementById('clienteMode').classList.remove('oculto');
+  document.getElementById('adminMode').classList.remove('visible');
+  document.getElementById('backupButtons').style.display = 'none';
+  
+  renderizarAdmin();
+  renderizarCliente();
+  
+  document.getElementById('passwordModal').classList.remove('visible');
+  
+  db.collection(COLECCION).onSnapshot(() => {
+    console.log('🔄 Cambios detectados en Firestore');
+    cargarTurnosFirestore().then(() => {
+      if (modoActual === 'admin') {
+        renderizarAdmin();
+      } else {
+        renderizarCliente();
+      }
+    });
+  });
+  
+  mostrarToast('✅ Conectado a la nube');
 }
 
 init();
