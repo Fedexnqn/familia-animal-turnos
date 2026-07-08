@@ -2542,7 +2542,9 @@ function renderizarTabla() {
   if (filtroActual === 'vencidos') filtrados = filtrados.filter(c => diasRestantesLocal(c.fecha) <= 0);
   if (filtroActual === 'futuros') filtrados = filtrados.filter(c => esFechaFuturaLocal(c.fecha));
 
+  // ORDENAR POR FECHA (DE MÁS RECIENTE A MÁS ANTIGUO)
   filtrados.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+  
   tbody.innerHTML = "";
 
   if (filtrados.length === 0) {
@@ -2550,34 +2552,67 @@ function renderizarTabla() {
     return;
   }
 
-  for (let c of filtrados) {
-    const estado = obtenerEstadoCliente(c);
-    const clase = { futuro: "azul", proximo: "amarillo", vencido: "rojo", normal: "verde" }[estado];
-    let estadoTexto = estado === "futuro" ? "Turno futuro" : (estado === "proximo" ? `${diasRestantesLocal(c.fecha)} días` : (estado === "vencido" ? "Vencido" : "Normal"));
-    let indicador = (c.fotos?.length > 0 ? "📷 " : "") + (c.observaciones ? "📝" : "");
-    const infoTamano = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
-    const badgeClass = infoTamano.badge || 'badge-chico';
+  // AGRUPAR POR DÍA
+  const diasMap = new Map();
+  filtrados.forEach(c => {
+    if (!diasMap.has(c.fecha)) {
+      diasMap.set(c.fecha, []);
+    }
+    diasMap.get(c.fecha).push(c);
+  });
 
-    const fila = document.createElement("tr");
-    fila.className = clase;
-    fila.onclick = (e) => { if(!e.target.closest('.btn-accion')) abrirModalCliente(c.id); };
-    fila.innerHTML = `
-      <td>${escapeHtml(c.duenio)}</td>
-      <td>${escapeHtml(c.mascota)}</td>
-      <td>${escapeHtml(c.raza || '—')}</td>
-      <td><span class="badge-tamano ${badgeClass}">${infoTamano.nombre}</span></td>
-      <td>${escapeHtml(c.telefono || '—')}</td>
-      <td>${formatearFechaLocal(c.fecha)}</td>
-      <td><strong>${c.hora || '10:00'}</strong></td>
-      <td>${infoTamano.duracion/60} hs</td>
-      <td>${estadoTexto}</td>
-      <td>${indicador || '—'}</td>
-      <td class="btn-accion" onclick="event.stopPropagation()">
-        <button style="background:#25D366;border:none;padding:5px 10px;border-radius:20px;color:white;cursor:pointer;margin-right:5px;" onclick="reenviarConfirmacion('${c.id}')"><i class="fab fa-whatsapp"></i> <span class="btn-texto">Confirmar</span></button>
-        <button style="background:#b0a9a1;border:none;padding:5px 10px;border-radius:20px;cursor:pointer;" onclick="eliminarCliente('${c.id}')"><i class="fas fa-trash"></i></button>
-      </td>
-    `;
-    tbody.appendChild(fila);
+  // OBTENER DÍAS ORDENADOS (DE MÁS RECIENTE A MÁS ANTIGUO)
+  const diasOrdenados = Array.from(diasMap.keys()).sort((a,b) => new Date(b) - new Date(a));
+
+  let esPrimerDia = true;
+
+  for (const fecha of diasOrdenados) {
+    const turnosDelDia = diasMap.get(fecha);
+    const fechaObj = new Date(fecha + 'T12:00:00');
+    const diasSemana = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const nombreDia = diasSemana[fechaObj.getDay()];
+    const claseDia = 'dia-' + nombreDia.toLowerCase();
+    
+    // Si no es el primer día, agregar una fila separadora (gruesa)
+    if (!esPrimerDia) {
+      const filaSeparador = document.createElement('tr');
+      filaSeparador.className = 'separador-dia';
+      filaSeparador.innerHTML = `<td colspan="11" style="padding: 5px; background: transparent; border-bottom: 4px solid #888;"></td>`;
+      tbody.appendChild(filaSeparador);
+    }
+    esPrimerDia = false;
+
+    // Agregar los turnos de este día
+    turnosDelDia.forEach(c => {
+      const estado = obtenerEstadoCliente(c);
+      const claseEstado = { futuro: "azul", proximo: "amarillo", vencido: "rojo", normal: "verde" }[estado];
+      
+      let estadoTexto = estado === "futuro" ? "Turno futuro" : (estado === "proximo" ? `${diasRestantesLocal(c.fecha)} días` : (estado === "vencido" ? "Vencido" : "Normal"));
+      let indicador = (c.fotos?.length > 0 ? "📷 " : "") + (c.observaciones ? "📝" : "");
+      const infoTamano = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
+      const badgeClass = infoTamano.badge || 'badge-chico';
+
+      const fila = document.createElement("tr");
+      fila.className = `${claseDia} ${claseEstado}`;
+      fila.onclick = (e) => { if(!e.target.closest('.btn-accion')) abrirModalCliente(c.id); };
+      fila.innerHTML = `
+        <td>${escapeHtml(c.duenio)}</td>
+        <td>${escapeHtml(c.mascota)}</td>
+        <td>${escapeHtml(c.raza || '—')}</td>
+        <td><span class="badge-tamano ${badgeClass}">${infoTamano.nombre}</span></td>
+        <td>${escapeHtml(c.telefono || '—')}</td>
+        <td><strong>${formatearFechaLocal(c.fecha)}</strong></td>
+        <td><strong>${c.hora || '10:00'}</strong></td>
+        <td>${infoTamano.duracion/60} hs</td>
+        <td>${estadoTexto}</td>
+        <td>${indicador || '—'}</td>
+        <td class="btn-accion" onclick="event.stopPropagation()">
+          <button style="background:#25D366;border:none;padding:5px 10px;border-radius:20px;color:white;cursor:pointer;margin-right:5px;" onclick="reenviarConfirmacion('${c.id}')"><i class="fab fa-whatsapp"></i> <span class="btn-texto">Confirmar</span></button>
+          <button style="background:#b0a9a1;border:none;padding:5px 10px;border-radius:20px;cursor:pointer;" onclick="eliminarCliente('${c.id}')"><i class="fas fa-trash"></i></button>
+        </td>
+      `;
+      tbody.appendChild(fila);
+    });
   }
 }
 
