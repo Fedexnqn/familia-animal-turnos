@@ -22,7 +22,6 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
 <!-- ===== ONESIGNAL ===== -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -391,33 +390,11 @@
   }
   .tabla td { padding: 12px; text-align: center; border-bottom: 1px solid #eee; }
   .tabla tr { cursor: pointer; transition: 0.2s; }
-  .tabla tr:hover td { filter: brightness(0.95); }
-
-  /* ===== COLORES POR DÍA DE LA SEMANA (TABLA) ===== */
-  .tabla tr.dia-lunes td { background-color: #E3F2FD !important; }      /* Azul muy claro */
-  .tabla tr.dia-martes td { background-color: #FFF3E0 !important; }     /* Naranja muy claro */
-  .tabla tr.dia-miercoles td { background-color: #E8F5E9 !important; }  /* Verde muy claro */
-  .tabla tr.dia-jueves td { background-color: #FCE4EC !important; }     /* Rosa muy claro */
-  .tabla tr.dia-viernes td { background-color: #F3E5F5 !important; }    /* Morado muy claro */
-  .tabla tr.dia-sabado td { background-color: #FFFDE7 !important; }     /* Amarillo muy claro */
-  .tabla tr.dia-domingo td { background-color: #F5F5F5 !important; }    /* Gris muy claro */
-
-  /* Los estados (futuro, vencido, etc.) se aplican como un "ribbon" o borde */
-  .tabla tr.azul td { border-left: 4px solid #2196f3 !important; }
-  .tabla tr.amarillo td { border-left: 4px solid #f9a825 !important; }
-  .tabla tr.rojo td { border-left: 4px solid #c7362b !important; }
-  .tabla tr.verde td { border-left: 4px solid #4CAF50 !important; }
-
-  /* Separador entre días */
-  .tabla tr.separador-dia td {
-    border-bottom: 3px solid #555 !important;
-    border-bottom-style: double !important;
-  }
-
-  .verde td { background-color: var(--verde-muy-claro); }
-  .amarillo td { background-color: #FFF8E1; }
-  .rojo td { background-color: #FFEBEE; }
-  .azul td { background-color: #E3F2FD; }
+  .tabla tr:hover { background: var(--naranja-muy-claro) !important; }
+  .verde td { background: var(--verde-muy-claro); }
+  .amarillo td { background: #FFF8E1; }
+  .rojo td { background: #FFEBEE; }
+  .azul td { background: #E3F2FD; }
 
   /* ===== CALENDARIO GRANDE ===== */
   .calendar-header { 
@@ -792,15 +769,6 @@
   .recordatorio-box .btn-recordatorio:hover {
     background: var(--verde-oscuro);
     transform: scale(0.97);
-  }
-
-  /* ===== MODAL DE DISPONIBILIDAD ===== */
-  .modal-disponibilidad .modal-container {
-    max-width: 600px;
-    border-color: #F9A825;
-  }
-  .modal-disponibilidad .modal-header {
-    background: linear-gradient(95deg, #F9A825, #F57F17);
   }
 
   .badge-tamano {
@@ -1272,9 +1240,6 @@
         <button class="btn-backup" onclick="descargarBackup()"><i class="fas fa-download"></i> <span class="btn-texto">Backup</span></button>
         <button class="btn-backup restore" onclick="document.getElementById('restoreInput').click()"><i class="fas fa-upload"></i> <span class="btn-texto">Restaurar</span></button>
         <input type="file" id="restoreInput" accept=".zip" style="display:none" onchange="restaurarBackup(event)">
-        <button class="btn-toggle" id="btnLogout" onclick="logout()" style="display:none; background: #c0392b; padding: 8px 20px; font-size:0.8rem; border: none; border-radius: 40px; color: white; font-weight: 600; cursor: pointer;">
-  <i class="fas fa-sign-out-alt"></i> <span class="btn-texto">Salir</span>
-</button>
       </div>
       <span class="badge-counter" id="statusCloud"><i class="fas fa-cloud"></i> <span id="totalClientes">0</span> turnos</span>
       <button class="btn-toggle" id="btnToggleModo" onclick="toggleModo()">
@@ -1310,14 +1275,6 @@
         <i class="fas fa-bell"></i> <span class="btn-texto">Activar notificaciones</span>
       </button>
       <span style="font-size:0.7rem; color:var(--marron);">📱 Recibí alertas cuando se registre un turno</span>
-    </div>
-
-    <!-- ===== BOTÓN PARA GENERAR DISPONIBILIDAD ===== -->
-    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; background: #FFF8E1; padding: 10px 15px; border-radius: 16px; border: 2px solid #F9A825;">
-      <button class="btn-toggle" onclick="generarDisponibilidad()" style="background: #F9A825; padding: 8px 20px; font-size:0.8rem; border: none; border-radius: 40px; color: white; font-weight: 600; cursor: pointer;">
-        <i class="fas fa-calendar-alt"></i> <span class="btn-texto">Generar disponibilidad</span>
-      </button>
-      <span style="font-size:0.7rem; color:var(--marron);">📋 Genera un mensaje con los horarios disponibles para compartir con clientes</span>
     </div>
 
     <div id="pane-clientes" class="tab-pane active">
@@ -1422,51 +1379,26 @@
 
 </div>
 
-<!-- ===== LOGIN CON FIREBASE AUTH ===== -->
 <div class="password-modal" id="passwordModal">
   <div class="password-box">
     <h3><i class="fas fa-lock" style="color: var(--naranja-oscuro);"></i> Acceso Administrador</h3>
-    <p>Ingresá tus credenciales para acceder al panel de gestión</p>
-    
-    <div style="margin-bottom: 15px;">
-      <input type="email" id="emailInput" placeholder="Email" style="width:100%; padding:14px; border:2px solid var(--naranja-claro); border-radius:24px; font-size:1rem; text-align:center;">
-    </div>
-    <div style="margin-bottom: 15px;">
-      <input type="password" id="passwordInput" placeholder="Contraseña" style="width:100%; padding:14px; border:2px solid var(--naranja-claro); border-radius:24px; font-size:1rem; text-align:center;" onkeydown="if(event.key==='Enter') login()">
-    </div>
-    
-    <button class="btn-entrar" onclick="login()"><i class="fas fa-sign-in-alt"></i> Entrar</button>
-    <div class="error" id="loginError" style="color:#c0392b; font-size:0.85rem; margin-top:10px; display:none;">❌ Usuario o contraseña incorrectos</div>
-    <div style="margin-top: 15px; font-size:0.8rem; color:#888;">
-      <span id="cargandoLogin" style="display:none;"><i class="fas fa-spinner fa-spin"></i> Verificando...</span>
-    </div>
+    <p>Ingresá la contraseña para acceder al panel de gestión</p>
+    <input type="password" id="passwordInput" placeholder="Contraseña..." onkeydown="if(event.key==='Enter') verificarPassword()">
+    <button class="btn-entrar" onclick="verificarPassword()"><i class="fas fa-sign-in-alt"></i> Entrar</button>
+    <div class="error" id="passwordError">❌ Contraseña incorrecta. Intentá de nuevo.</div>
   </div>
 </div>
 
-<!-- ===== MODAL DE DISPONIBILIDAD ===== -->
-<div class="modal-overlay modal-disponibilidad" id="modalDisponibilidad" style="display:none;">
-  <div class="modal-container">
-    <div class="modal-header">
-      <h3><i class="fas fa-calendar-alt"></i> Disponibilidad de turnos</h3>
-      <button class="modal-close" onclick="cerrarDisponibilidad()">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div style="margin-bottom: 15px;">
-        <label style="font-weight:600; font-size:0.9rem;">📅 <span id="disponibilidadSemana"></span></label>
-      </div>
-      <div id="disponibilidadContenido" style="background: #f5f5f5; padding: 15px; border-radius: 12px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; font-size: 0.9rem; line-height: 1.6;">
-        Cargando...
-      </div>
-    </div>
-    <div class="modal-footer" style="justify-content: center;">
-      <button class="modal-btn" onclick="copiarDisponibilidad()" style="background: #2196f3; color: white;">
-        <i class="fas fa-copy"></i> Copiar mensaje
-      </button>
-      <button class="modal-btn modal-btn-wsp" onclick="compartirDisponibilidad()">
-        <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
-      </button>
-      <button class="modal-btn modal-btn-cerrar" onclick="cerrarDisponibilidad()">Cerrar</button>
-    </div>
+<div class="recordatorio-modal" id="modalRecordatorio">
+  <div class="recordatorio-box">
+    <i class="fas fa-info-circle" style="font-size: 48px; color: var(--naranja-oscuro); margin-bottom: 15px;"></i>
+    <h3>⚠️ Importante</h3>
+    <p>
+      Recordá respetar el turno agendado.<br><br>
+      Si no podés asistir, por favor avisanos con anticipación para poder reasignar el horario.<br><br>
+      ¡Gracias por confiar en nosotros! 🐾
+    </p>
+    <button class="btn-recordatorio" id="btnContinuarRecordatorio">Entendido, continuar</button>
   </div>
 </div>
 
@@ -1483,6 +1415,7 @@ const firebaseConfig = {
     appId: "1:523162238241:web:32d79a72ec101198285260"
 };
 
+const CONTRASEÑA_ADMIN = "familia2026";
 const COLECCION = 'turnos';
 const PELUQUEROS_POR_TURNO = 1;
 const HORA_CIERRE = '20:30';
@@ -1909,101 +1842,23 @@ async function restaurarBackup(event) {
 // ============================================================
 // ========== SEGURIDAD ==========
 // ============================================================
-// ============================================================
-// ========== FIREBASE AUTHENTICATION ==========
-// ============================================================
-
-// Estado de autenticación
-let usuarioActual = null;
-
-// Función de login
-async function login() {
-  const email = document.getElementById('emailInput').value.trim();
-  const password = document.getElementById('passwordInput').value.trim();
-  const errorDiv = document.getElementById('loginError');
-  const cargando = document.getElementById('cargandoLogin');
-  
-  if (!email || !password) {
-    errorDiv.textContent = '❌ Completá email y contraseña';
-    errorDiv.style.display = 'block';
-    return;
-  }
-  
-  errorDiv.style.display = 'none';
-  cargando.style.display = 'inline-block';
-  
-  try {
-    const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-    usuarioActual = userCredential.user;
-    console.log('✅ Usuario logueado:', usuarioActual.email);
-    
-    cargando.style.display = 'none';
+function verificarPassword() {
+  const input = document.getElementById('passwordInput');
+  const error = document.getElementById('passwordError');
+  const password = input.value;
+  if (password === CONTRASEÑA_ADMIN) {
     document.getElementById('passwordModal').classList.remove('visible');
-    
-    // Mostrar admin y ocultar botón de login
     mostrarAdmin();
-    document.getElementById('btnLogout').style.display = 'inline-flex';
-    document.getElementById('btnToggleModo').style.display = 'none';
-    
-    mostrarToast('✅ Bienvenido ' + usuarioActual.email);
-    
-  } catch (error) {
-    cargando.style.display = 'none';
-    console.error('❌ Error de login:', error);
-    
-    if (error.code === 'auth/user-not-found') {
-      errorDiv.textContent = '❌ Usuario no encontrado';
-    } else if (error.code === 'auth/wrong-password') {
-      errorDiv.textContent = '❌ Contraseña incorrecta';
-    } else if (error.code === 'auth/invalid-email') {
-      errorDiv.textContent = '❌ Email inválido';
-    } else if (error.code === 'auth/too-many-requests') {
-      errorDiv.textContent = '❌ Demasiados intentos. Esperá un momento.';
-    } else {
-      errorDiv.textContent = '❌ Error: ' + error.message;
-    }
-    errorDiv.style.display = 'block';
-  }
-}
-
-// Función de logout
-function logout() {
-  firebase.auth().signOut().then(() => {
-    usuarioActual = null;
-    document.getElementById('btnLogout').style.display = 'none';
-    document.getElementById('btnToggleModo').style.display = 'inline-flex';
-    
-    // Volver al modo cliente
-    modoActual = 'cliente';
-    document.getElementById('clienteMode').classList.remove('oculto');
-    document.getElementById('adminMode').classList.remove('visible');
-    document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user-cog"></i> <span class="btn-texto">Modo Admin</span>';
-    document.getElementById('backupButtons').style.display = 'none';
-    
-    mostrarToast('✅ Sesión cerrada');
-    renderizarCliente();
-  }).catch(error => {
-    console.error('❌ Error al cerrar sesión:', error);
-    mostrarToast('❌ Error al cerrar sesión', true);
-  });
-}
-
-
-
-// Escuchar cambios en el estado de autenticación
-firebase.auth().onAuthStateChanged(user => {
-  if (user) {
-    usuarioActual = user;
-    console.log('👤 Usuario autenticado:', user.email);
-    // Si la página se recarga y el usuario está logueado, mostrar admin automáticamente
-    if (modoActual === 'cliente') {
-      // No forzamos la vista admin, el usuario decide
-    }
+    mostrarToast('✅ Acceso concedido');
+    input.value = '';
+    error.style.display = 'none';
   } else {
-    usuarioActual = null;
-    console.log('👤 Usuario no autenticado');
+    error.style.display = 'block';
+    input.value = '';
+    input.focus();
+    mostrarToast('❌ Contraseña incorrecta', true);
   }
-});
+}
 
 function toggleModo() {
   const backupDiv = document.getElementById('backupButtons');
@@ -2114,121 +1969,6 @@ async function enviarNotificacionPush(turno, infoTamano) {
     console.error('❌ Error al enviar notificación:', error);
   }
 }
-
-// ============================================================
-// ===== GENERAR DISPONIBILIDAD PARA CLIENTES =====
-// ============================================================
-
-function generarDisponibilidad() {
-  const modal = document.getElementById('modalDisponibilidad');
-  const contenido = document.getElementById('disponibilidadContenido');
-  const semanaLabel = document.getElementById('disponibilidadSemana');
-  
-  modal.style.display = 'flex';
-  contenido.textContent = 'Generando disponibilidad...';
-  
-  const diasDisponibles = [];
-  const hoy = new Date();
-  hoy.setHours(12, 0, 0, 0);
-  
-  let diasAgregados = 0;
-  let i = 0;
-  
-  while (diasAgregados < 7) {
-    const dia = new Date(hoy);
-    dia.setDate(hoy.getDate() + i);
-    dia.setHours(12, 0, 0, 0);
-    
-    const diaSemana = dia.getDay();
-    if (diaSemana !== 0) {
-      const diaStr = dia.toISOString().slice(0,10);
-      const fechaFormateada = formatearFechaLocal(diaStr);
-      const nombreDia = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'][diaSemana];
-      
-      const horarios = obtenerHorariosDisponibles(diaStr, 60);
-      const disponibles = horarios.filter(h => !h.ocupado);
-      
-      diasDisponibles.push({
-        fecha: diaStr,
-        fechaFormateada: fechaFormateada,
-        nombreDia: nombreDia,
-        horarios: disponibles
-      });
-      
-      diasAgregados++;
-    }
-    i++;
-  }
-  
-  let mensaje = '📅 *DISPOSICIÓN DE TURNOS - FAMILIA ANIMAL* 📅\n';
-  mensaje += '🐾 Peluquería Canina\n';
-  mensaje += '📆 ' + diasDisponibles[0]?.fechaFormateada + ' - ' + diasDisponibles[diasDisponibles.length-1]?.fechaFormateada + '\n';
-  mensaje += '═'.repeat(30) + '\n\n';
-  
-  diasDisponibles.forEach(d => {
-    mensaje += `📌 *${d.nombreDia} ${d.fechaFormateada}*\n`;
-    
-    if (d.horarios.length === 0) {
-      mensaje += '   ❌ Sin turnos disponibles\n';
-    } else {
-      d.horarios.forEach(h => {
-        mensaje += `   🟢 ${h.hora}\n`;
-      });
-    }
-    mensaje += '\n';
-  });
-  
-  mensaje += '═'.repeat(30) + '\n';
-  mensaje += '📱 *Reservá tu turno:*\n';
-  mensaje += '🔗 ' + window.location.href + '\n\n';
-  mensaje += '✂️ ¡Te esperamos! 🐾';
-  
-  contenido.textContent = mensaje;
-  semanaLabel.textContent = diasDisponibles[0]?.fechaFormateada + ' - ' + diasDisponibles[diasDisponibles.length-1]?.fechaFormateada;
-  window._disponibilidadMensaje = mensaje;
-}
-
-function cerrarDisponibilidad() {
-  document.getElementById('modalDisponibilidad').style.display = 'none';
-}
-
-function copiarDisponibilidad() {
-  const mensaje = window._disponibilidadMensaje || '';
-  if (!mensaje) {
-    mostrarToast('⚠️ No hay mensaje para copiar', true);
-    return;
-  }
-  
-  navigator.clipboard.writeText(mensaje).then(() => {
-    mostrarToast('✅ Mensaje copiado al portapapeles');
-  }).catch(() => {
-    const textarea = document.createElement('textarea');
-    textarea.value = mensaje;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-    mostrarToast('✅ Mensaje copiado al portapapeles');
-  });
-}
-
-function compartirDisponibilidad() {
-  const mensaje = window._disponibilidadMensaje || '';
-  if (!mensaje) {
-    mostrarToast('⚠️ No hay mensaje para compartir', true);
-    return;
-  }
-  
-  const url = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
-  window.open(url, '_blank');
-}
-
-document.addEventListener('click', function(event) {
-  const modal = document.getElementById('modalDisponibilidad');
-  if (event.target === modal) {
-    cerrarDisponibilidad();
-  }
-});
 
 // ============================================================
 // ========== RENDERIZAR ==========
@@ -2717,6 +2457,7 @@ async function confirmarTurnoCliente() {
 
   actualizarContadores();
 
+  // ===== MENSAJE PARA EL DUEÑO =====
   const mensajeParaDueno = `🐾 *¡Hola! Soy ${duenio} y acabo de reservar un turno en Familia Animal!* 🐾
 
 📅 Fecha: ${formatearFechaLocal(clienteSeleccionado.fecha)}
@@ -2728,6 +2469,7 @@ async function confirmarTurnoCliente() {
 
 ¡Gracias por confirmar! 🐾`;
 
+  // ===== MENSAJE PARA LOS PELUQUEROS (WhatsApp) =====
   const mensajePeluqueros = `🐾 *NUEVA RESERVA DE TURNO* 🐾
 
 📅 Fecha: ${formatearFechaLocal(clienteSeleccionado.fecha)}
@@ -2740,12 +2482,14 @@ async function confirmarTurnoCliente() {
 
 ¡Nuevo turno agendado! ✂️`;
 
+  // ===== ENVIAR NOTIFICACIÓN PUSH =====
   await enviarNotificacionPush(nuevoTurno, infoTamano);
 
   const TU_NUMERO = "5492996055561";
   const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
   const urlWhatsAppDueño = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensajeParaDueno)}`;
 
+  // Enviar WhatsApp a los peluqueros
   PELUQUEROS.forEach(num => {
     const numLimpio = num.replace(/[^0-9+]/g, '');
     window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensajePeluqueros)}`, '_blank');
@@ -2798,9 +2542,7 @@ function renderizarTabla() {
   if (filtroActual === 'vencidos') filtrados = filtrados.filter(c => diasRestantesLocal(c.fecha) <= 0);
   if (filtroActual === 'futuros') filtrados = filtrados.filter(c => esFechaFuturaLocal(c.fecha));
 
-  // ORDENAR POR FECHA (DE MÁS RECIENTE A MÁS ANTIGUO)
   filtrados.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-  
   tbody.innerHTML = "";
 
   if (filtrados.length === 0) {
@@ -2808,67 +2550,34 @@ function renderizarTabla() {
     return;
   }
 
-  // AGRUPAR POR DÍA
-  const diasMap = new Map();
-  filtrados.forEach(c => {
-    if (!diasMap.has(c.fecha)) {
-      diasMap.set(c.fecha, []);
-    }
-    diasMap.get(c.fecha).push(c);
-  });
+  for (let c of filtrados) {
+    const estado = obtenerEstadoCliente(c);
+    const clase = { futuro: "azul", proximo: "amarillo", vencido: "rojo", normal: "verde" }[estado];
+    let estadoTexto = estado === "futuro" ? "Turno futuro" : (estado === "proximo" ? `${diasRestantesLocal(c.fecha)} días` : (estado === "vencido" ? "Vencido" : "Normal"));
+    let indicador = (c.fotos?.length > 0 ? "📷 " : "") + (c.observaciones ? "📝" : "");
+    const infoTamano = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
+    const badgeClass = infoTamano.badge || 'badge-chico';
 
-  // OBTENER DÍAS ORDENADOS (DE MÁS RECIENTE A MÁS ANTIGUO)
-  const diasOrdenados = Array.from(diasMap.keys()).sort((a,b) => new Date(b) - new Date(a));
-
-  let esPrimerDia = true;
-
-  for (const fecha of diasOrdenados) {
-    const turnosDelDia = diasMap.get(fecha);
-    const fechaObj = new Date(fecha + 'T12:00:00');
-    const diasSemana = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-    const nombreDia = diasSemana[fechaObj.getDay()];
-    const claseDia = 'dia-' + nombreDia.toLowerCase();
-    
-    // Si no es el primer día, agregar una fila separadora (gruesa)
-    if (!esPrimerDia) {
-      const filaSeparador = document.createElement('tr');
-      filaSeparador.className = 'separador-dia';
-      filaSeparador.innerHTML = `<td colspan="11" style="padding: 5px; background: transparent; border-bottom: 4px solid #888;"></td>`;
-      tbody.appendChild(filaSeparador);
-    }
-    esPrimerDia = false;
-
-    // Agregar los turnos de este día
-    turnosDelDia.forEach(c => {
-      const estado = obtenerEstadoCliente(c);
-      const claseEstado = { futuro: "azul", proximo: "amarillo", vencido: "rojo", normal: "verde" }[estado];
-      
-      let estadoTexto = estado === "futuro" ? "Turno futuro" : (estado === "proximo" ? `${diasRestantesLocal(c.fecha)} días` : (estado === "vencido" ? "Vencido" : "Normal"));
-      let indicador = (c.fotos?.length > 0 ? "📷 " : "") + (c.observaciones ? "📝" : "");
-      const infoTamano = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
-      const badgeClass = infoTamano.badge || 'badge-chico';
-
-      const fila = document.createElement("tr");
-      fila.className = `${claseDia} ${claseEstado}`;
-      fila.onclick = (e) => { if(!e.target.closest('.btn-accion')) abrirModalCliente(c.id); };
-      fila.innerHTML = `
-        <td>${escapeHtml(c.duenio)}</td>
-        <td>${escapeHtml(c.mascota)}</td>
-        <td>${escapeHtml(c.raza || '—')}</td>
-        <td><span class="badge-tamano ${badgeClass}">${infoTamano.nombre}</span></td>
-        <td>${escapeHtml(c.telefono || '—')}</td>
-        <td><strong>${formatearFechaLocal(c.fecha)}</strong></td>
-        <td><strong>${c.hora || '10:00'}</strong></td>
-        <td>${infoTamano.duracion/60} hs</td>
-        <td>${estadoTexto}</td>
-        <td>${indicador || '—'}</td>
-        <td class="btn-accion" onclick="event.stopPropagation()">
-          <button style="background:#25D366;border:none;padding:5px 10px;border-radius:20px;color:white;cursor:pointer;margin-right:5px;" onclick="reenviarConfirmacion('${c.id}')"><i class="fab fa-whatsapp"></i> <span class="btn-texto">Confirmar</span></button>
-          <button style="background:#b0a9a1;border:none;padding:5px 10px;border-radius:20px;cursor:pointer;" onclick="eliminarCliente('${c.id}')"><i class="fas fa-trash"></i></button>
-        </td>
-      `;
-      tbody.appendChild(fila);
-    });
+    const fila = document.createElement("tr");
+    fila.className = clase;
+    fila.onclick = (e) => { if(!e.target.closest('.btn-accion')) abrirModalCliente(c.id); };
+    fila.innerHTML = `
+      <td>${escapeHtml(c.duenio)}</td>
+      <td>${escapeHtml(c.mascota)}</td>
+      <td>${escapeHtml(c.raza || '—')}</td>
+      <td><span class="badge-tamano ${badgeClass}">${infoTamano.nombre}</span></td>
+      <td>${escapeHtml(c.telefono || '—')}</td>
+      <td>${formatearFechaLocal(c.fecha)}</td>
+      <td><strong>${c.hora || '10:00'}</strong></td>
+      <td>${infoTamano.duracion/60} hs</td>
+      <td>${estadoTexto}</td>
+      <td>${indicador || '—'}</td>
+      <td class="btn-accion" onclick="event.stopPropagation()">
+        <button style="background:#25D366;border:none;padding:5px 10px;border-radius:20px;color:white;cursor:pointer;margin-right:5px;" onclick="reenviarConfirmacion('${c.id}')"><i class="fab fa-whatsapp"></i> <span class="btn-texto">Confirmar</span></button>
+        <button style="background:#b0a9a1;border:none;padding:5px 10px;border-radius:20px;cursor:pointer;" onclick="eliminarCliente('${c.id}')"><i class="fas fa-trash"></i></button>
+      </td>
+    `;
+    tbody.appendChild(fila);
   }
 }
 
@@ -2877,6 +2586,7 @@ function reenviarConfirmacion(id) {
   if (cliente && cliente.telefono) {
     const infoTamano = TAMAÑOS[cliente.tamano] || TAMAÑOS['chico'];
     
+    // 📝 MENSAJE PARA ADMIN (en tercera persona)
     const mensaje = `🐾 *Confirmación de turno - Familia Animal* 🐾
 
 Hola ${cliente.duenio}, te confirmamos tu turno para ${cliente.mascota}.
@@ -2891,6 +2601,7 @@ Hola ${cliente.duenio}, te confirmamos tu turno para ${cliente.mascota}.
 
 ¡Te esperamos! Cualquier cambio, avisanos con anticipación. ✂️`;
 
+    // ✅ CORREGIDO: Usar el teléfono del cliente
     const telefonoLimpio = cliente.telefono.replace(/[^0-9+]/g, '');
     window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   } else {
@@ -2898,6 +2609,7 @@ Hola ${cliente.duenio}, te confirmamos tu turno para ${cliente.mascota}.
   }
 }
 
+// ===== NOTIFICAR MODIFICACIÓN =====
 async function notificarModificacion(cliente) {
   if (!cliente || !cliente.telefono) {
     mostrarToast("⚠️ Cliente sin número de teléfono para notificar", true);
@@ -3017,6 +2729,7 @@ Hola ${clienteModalActual.duenio}, te confirmamos tu turno para ${clienteModalAc
 
 ¡Te esperamos! Cualquier cambio, avisanos con anticipación. ✂️`;
 
+    // ✅ CORREGIDO: Usar el teléfono del cliente
     const telefonoLimpio = clienteModalActual.telefono.replace(/[^0-9+]/g, '');
     window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
   } else {
@@ -3072,6 +2785,7 @@ function ampliarFoto(url) {
 async function guardarModal() {
   if (!clienteModalActual) return;
   
+  // Guardar los datos del modal en el objeto clienteModalActual
   clienteModalActual.duenio = document.getElementById('modalDuenio').value;
   clienteModalActual.mascota = document.getElementById('modalMascota').value;
   clienteModalActual.raza = document.getElementById('modalRaza').value;
@@ -3087,6 +2801,7 @@ async function guardarModal() {
     document.querySelector('.modal-overlay')?.remove();
     mostrarToast("✅ Cambios guardados");
     
+    // 👇 NUEVA PREGUNTA: ¿Notificar al cliente?
     const notificar = confirm("📱 ¿Quieres notificar al cliente sobre la modificación del turno?");
     if (notificar) {
       await notificarModificacion(clienteModalActual);
