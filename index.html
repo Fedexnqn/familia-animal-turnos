@@ -19,6 +19,9 @@
 <!-- JSZip -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<!-- PDF (jsPDF + html2canvas) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -33,12 +36,8 @@
       appId: "2fea8107-546d-4f95-b9f1-7ae76aaeda08",
       serviceWorkerPath: "/familia-animal-turnos/OneSignalSDKWorker.js",
       serviceWorkerParam: { scope: "/familia-animal-turnos/" },
-      notifyButton: {
-        enable: false,
-      },
-      welcomeNotification: {
-        disable: true
-      },
+      notifyButton: { enable: false },
+      welcomeNotification: { disable: true },
       allowLocalhostAsSecureOrigin: true
     });
     console.log('✅ OneSignal inicializado correctamente');
@@ -61,6 +60,7 @@
     --verde-muy-claro: #E8F5E9;
     --beige: #F5EDE4;
     --marron: #8B6B4A;
+    --azul: #2196F3;
   }
 
   .hero { 
@@ -112,6 +112,8 @@
   .btn-backup.restore:hover { background: var(--naranja-medio); }
   .btn-backup.logout { background: #c0392b; }
   .btn-backup.logout:hover { background: #e74c3c; }
+  .btn-backup.pdf { background: #d32f2f; }
+  .btn-backup.pdf:hover { background: #f44336; }
   
   .badge-counter { 
     background: var(--naranja-muy-claro); 
@@ -309,7 +311,7 @@
     flex-wrap: wrap; 
     gap: 15px; 
   }
-  .search-box { display: flex; gap: 10px; align-items: center; }
+  .search-box { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .search-box input { 
     padding: 10px 16px; 
     border-radius: 30px; 
@@ -360,21 +362,6 @@
     transition: 0.3s;
   }
   .btn-primary:hover { transform: scale(0.98); opacity: 0.9; }
-
-  .quick-filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-  .filter-chip { 
-    background: var(--beige); 
-    border: 2px solid var(--naranja-claro); 
-    padding: 8px 20px; 
-    border-radius: 30px; 
-    cursor: pointer; 
-    font-weight: 500; 
-    transition: 0.2s;
-  }
-  .filter-chip:hover { 
-    border-color: var(--naranja-medio); 
-    background: var(--naranja-muy-claro); 
-  }
 
   .table-wrapper { 
     background: white; 
@@ -732,6 +719,8 @@
   .badge-mediano { background: #FFD54F; color: #7d5a00; }
   .badge-grande { background: #FF8A65; color: #7a2e00; }
   .badge-extragrande { background: #EF5350; color: white; }
+  .badge-rol-admin { background: #2196F3; color: white; }
+  .badge-rol-peluquero { background: #FF9800; color: white; }
 
   .horarios-dia-admin {
     display: flex;
@@ -797,7 +786,47 @@
     gap: 10px;
   }
 
-  /* ===== ESTILOS DE LOGIN ===== */
+  /* ===== PAGINACIÓN ===== */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 15px 0;
+    flex-wrap: wrap;
+  }
+  .pagination button {
+    padding: 8px 16px;
+    border: 2px solid var(--naranja-claro);
+    border-radius: 20px;
+    background: white;
+    color: var(--marron);
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+    min-width: 40px;
+  }
+  .pagination button:hover:not(:disabled) {
+    background: var(--naranja-medio);
+    color: white;
+    border-color: var(--naranja-medio);
+  }
+  .pagination button.active {
+    background: var(--naranja-medio);
+    color: white;
+    border-color: var(--naranja-oscuro);
+  }
+  .pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .pagination .info {
+    font-size: 0.85rem;
+    color: var(--marron);
+    padding: 0 10px;
+  }
+
+  /* ===== LOGIN ===== */
   .login-overlay {
     position: fixed;
     top: 0;
@@ -811,7 +840,7 @@
     z-index: 5000;
     backdrop-filter: blur(8px);
   }
-  .login-overlay.visible { display: flex; }
+  .login-overlay.visible { display: flex !important; }
 
   .login-container {
     background: white;
@@ -1198,6 +1227,15 @@
     
     .hero h2 i { font-size: 0.9rem; }
     .btn-toggle i { font-size: 0.9rem; }
+    
+    .pagination button {
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      min-width: 30px;
+    }
+    .pagination .info {
+      font-size: 0.7rem;
+    }
   }
 
   @media (max-width: 420px) {
@@ -1279,7 +1317,6 @@
       <p>Ingresa para gestionar los turnos</p>
     </div>
     
-    <!-- Login Form -->
     <form id="loginForm" onsubmit="return iniciarSesion(event)">
       <div class="input-group">
         <label><i class="fas fa-envelope"></i> Email</label>
@@ -1324,6 +1361,13 @@
         <label><i class="fas fa-lock"></i> Contraseña</label>
         <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
       </div>
+      <div class="input-group">
+        <label><i class="fas fa-user-tag"></i> Rol</label>
+        <select id="registerRol">
+          <option value="admin">👑 Administrador</option>
+          <option value="peluquero">✂️ Peluquero</option>
+        </select>
+      </div>
       <button type="submit" class="btn-login" id="registerBtn">
         <i class="fas fa-user-plus"></i> Registrarse
       </button>
@@ -1354,6 +1398,7 @@
         <button class="btn-backup" onclick="descargarBackup()"><i class="fas fa-download"></i> <span class="btn-texto">Backup</span></button>
         <button class="btn-backup restore" onclick="document.getElementById('restoreInput').click()"><i class="fas fa-upload"></i> <span class="btn-texto">Restaurar</span></button>
         <input type="file" id="restoreInput" accept=".zip" style="display:none" onchange="restaurarBackup(event)">
+        <button class="btn-backup pdf" onclick="generarReportePDF()"><i class="fas fa-file-pdf"></i> <span class="btn-texto">PDF</span></button>
         <button class="btn-backup logout" id="btnLogout" onclick="cerrarSesion()" style="display:none;">
           <i class="fas fa-sign-out-alt"></i> <span class="btn-texto">Salir</span>
         </button>
@@ -1386,6 +1431,7 @@
       <button class="tab-btn active" onclick="switchTab('clientes', this)"><i class="fas fa-users"></i> <span class="btn-texto">Turnos</span></button>
       <button class="tab-btn" onclick="switchTab('estadisticas', this)"><i class="fas fa-chart-bar"></i> <span class="btn-texto">Estadísticas</span></button>
       <button class="tab-btn" onclick="switchTab('recordatorios', this)"><i class="fas fa-bell"></i> <span class="btn-texto">Recordatorios</span></button>
+      <button class="tab-btn" onclick="switchTab('usuarios', this)"><i class="fas fa-user-shield"></i> <span class="btn-texto">Usuarios</span></button>
     </div>
 
     <!-- ===== BOTÓN PARA ACTIVAR NOTIFICACIONES ===== -->
@@ -1473,11 +1519,19 @@
           </div>
         </div>
 
+        <!-- ===== TABLA CON PAGINACIÓN ===== -->
         <div class="table-wrapper" style="margin-top: 20px;">
           <table class="tabla">
             <thead><tr><th>Dueño</th><th>Mascota</th><th>Raza</th><th>Tamaño</th><th>Teléfono</th><th>Fecha</th><th>Hora</th><th>Duración</th><th>Estado</th><th>📎</th><th>Acciones</th></tr></thead>
             <tbody id="tablaClientes"></tbody>
           </table>
+        </div>
+        
+        <!-- ===== PAGINACIÓN ===== -->
+        <div class="pagination" id="paginationContainer">
+          <button onclick="cambiarPagina(-1)" id="prevPageBtn" disabled><i class="fas fa-chevron-left"></i></button>
+          <span id="pageInfo" class="info">Página 1 de 1</span>
+          <button onclick="cambiarPagina(1)" id="nextPageBtn" disabled><i class="fas fa-chevron-right"></i></button>
         </div>
       </div>
     </div>
@@ -1503,6 +1557,18 @@
         <p style="color: var(--marron);">Selecciona los clientes que vencen pronto (próximos 7 días)</p>
         <div class="clientes-lista" id="listaRecordatorios"></div>
         <button class="btn-masivo" onclick="enviarRecordatorioMasivo()"><i class="fab fa-whatsapp"></i> Enviar a seleccionados</button>
+      </div>
+    </div>
+
+    <!-- ===== PANEL USUARIOS ===== -->
+    <div id="pane-usuarios" class="tab-pane">
+      <div class="form-card">
+        <div class="form-title">
+          <span><i class="fas fa-user-shield"></i> Gestión de Usuarios</span>
+        </div>
+        <div id="listaUsuarios">
+          <div class="cargando"><i class="fas fa-spinner fa-spin"></i> Cargando usuarios...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1569,6 +1635,7 @@ const firebaseConfig = {
 const COLECCION = 'turnos';
 const PELUQUEROS_POR_TURNO = 1;
 const HORA_CIERRE = '20:30';
+const ITEMS_POR_PAGINA = 20;
 
 // Números de los peluqueros para recibir notificaciones por WhatsApp
 const PELUQUEROS = ["5492996055561"];
@@ -1600,12 +1667,14 @@ let fechaSeleccionadaAdmin = null;
 let horaSeleccionadaAdmin = null;
 let usuarioActual = null;
 let esAdmin = false;
+let paginaActual = 1;
+let totalPaginas = 1;
+let usuariosRegistrados = [];
 
 // ============================================================
-// ===== AUTHENTICATION =====
+// ===== AUTHENTICATION - SOLO PARA ADMIN =====
 // ============================================================
 
-// ===== VERIFICAR SESIÓN AL CARGAR =====
 auth.onAuthStateChanged(async (user) => {
   console.log('🔄 Auth state changed:', user ? user.email : 'null');
   
@@ -1613,41 +1682,49 @@ auth.onAuthStateChanged(async (user) => {
     usuarioActual = user;
     const email = user.email;
     
-    // Verificar si es admin (email verificado o dominio específico)
     if (email === 'admin@familiaanimal.com' || (email && email.endsWith('@familiaanimal.com'))) {
       esAdmin = true;
     } else {
-      // Verificar en Firestore si tiene rol de admin
       esAdmin = await verificarRolAdmin(user.uid);
     }
     
     if (esAdmin) {
       ocultarLogin();
       document.getElementById('btnLogout').style.display = 'inline-flex';
-      mostrarToast('✅ Bienvenido ' + (user.displayName || 'Administrador'));
+      mostrarToast('✅ Sesión admin activa');
       
-      // Si el usuario estaba en modo admin, mostrar admin
       if (modoActual === 'admin') {
         mostrarAdmin();
       }
     } else {
-      // Usuario autenticado pero no admin
       await auth.signOut();
       mostrarErrorLogin('❌ No tienes permisos de administrador');
+      modoActual = 'cliente';
+      document.getElementById('clienteMode').classList.remove('oculto');
+      document.getElementById('adminMode').classList.remove('visible');
+      document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user-cog"></i> <span class="btn-texto">Modo Admin</span>';
+      document.getElementById('backupButtons').style.display = 'none';
+      document.getElementById('btnLogout').style.display = 'none';
+      ocultarLogin();
     }
   } else {
     usuarioActual = null;
     esAdmin = false;
     document.getElementById('btnLogout').style.display = 'none';
+    ocultarLogin();
     
-    // Si estaba en modo admin, mostrar login
     if (modoActual === 'admin') {
-      mostrarLogin();
+      modoActual = 'cliente';
+      document.getElementById('clienteMode').classList.remove('oculto');
+      document.getElementById('adminMode').classList.remove('visible');
+      document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user-cog"></i> <span class="btn-texto">Modo Admin</span>';
+      document.getElementById('backupButtons').style.display = 'none';
     }
   }
 });
 
-// ===== INICIAR SESIÓN =====
+// ===== FUNCIONES DE AUTENTICACIÓN =====
+
 async function iniciarSesion(event) {
   event.preventDefault();
   
@@ -1656,31 +1733,24 @@ async function iniciarSesion(event) {
   const errorDiv = document.getElementById('loginError');
   const btn = document.getElementById('loginBtn');
   
-  // Ocultar error anterior
   errorDiv.classList.remove('show');
   errorDiv.textContent = '';
   
-  // Validar campos
   if (!email || !password) {
     mostrarErrorLogin('Por favor, completá todos los campos');
     return false;
   }
   
   try {
-    // Mostrar loading
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
     btn.disabled = true;
     
-    // Iniciar sesión con Firebase
     await auth.signInWithEmailAndPassword(email, password);
-    
-    // El estado de autenticación se maneja en onAuthStateChanged
     
   } catch (error) {
     console.error('❌ Error de login:', error);
     
     let mensaje = 'Error al iniciar sesión. Intentá de nuevo.';
-    
     switch (error.code) {
       case 'auth/user-not-found':
         mensaje = '❌ Usuario no encontrado. Verificá tu email.';
@@ -1699,7 +1769,6 @@ async function iniciarSesion(event) {
     }
     
     mostrarErrorLogin(mensaje);
-    
     btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Ingresar';
     btn.disabled = false;
   }
@@ -1707,13 +1776,13 @@ async function iniciarSesion(event) {
   return false;
 }
 
-// ===== REGISTRAR USUARIO =====
 async function registrarUsuario(event) {
   event.preventDefault();
   
   const name = document.getElementById('registerName').value.trim();
   const email = document.getElementById('registerEmail').value.trim();
   const password = document.getElementById('registerPassword').value;
+  const rol = document.getElementById('registerRol').value;
   const errorDiv = document.getElementById('registerError');
   const btn = document.getElementById('registerBtn');
   
@@ -1734,32 +1803,33 @@ async function registrarUsuario(event) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando cuenta...';
     btn.disabled = true;
     
-    // Crear usuario en Firebase Auth
     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
     const user = userCredential.user;
     
-    // Actualizar perfil con nombre
     await user.updateProfile({
       displayName: name
     });
     
-    // Guardar datos adicionales en Firestore
     await db.collection('usuarios').doc(user.uid).set({
       nombre: name,
       email: email,
-      rol: 'admin',
+      rol: rol,
       fechaCreacion: firebase.firestore.FieldValue.serverTimestamp(),
       activo: true
     });
     
     mostrarToast('✅ Cuenta creada exitosamente');
     
-    // Cerrar registro y mostrar login
     document.getElementById('registerOverlay').classList.remove('visible');
+    document.getElementById('registerOverlay').style.display = 'none';
     document.getElementById('loginOverlay').classList.add('visible');
+    document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('loginEmail').value = email;
     document.getElementById('loginPassword').value = '';
     document.getElementById('loginEmail').focus();
+    
+    // Recargar lista de usuarios
+    cargarUsuarios();
     
   } catch (error) {
     console.error('❌ Error de registro:', error);
@@ -1780,7 +1850,6 @@ async function registrarUsuario(event) {
     }
     
     mostrarErrorRegistro(mensaje);
-    
     btn.innerHTML = '<i class="fas fa-user-plus"></i> Registrarse';
     btn.disabled = false;
   }
@@ -1788,59 +1857,35 @@ async function registrarUsuario(event) {
   return false;
 }
 
-// ===== VERIFICAR ROL EN FIRESTORE =====
-async function verificarRolAdmin(uid) {
-  try {
-    const doc = await db.collection('usuarios').doc(uid).get();
-    if (doc.exists) {
-      const data = doc.data();
-      return data.rol === 'admin' || data.rol === 'superadmin';
-    }
-    return false;
-  } catch (error) {
-    console.error('Error verificando rol:', error);
-    return false;
-  }
-}
-
-// ===== CERRAR SESIÓN =====
-async function cerrarSesion() {
-  try {
-    await auth.signOut();
-    mostrarToast('👋 Sesión cerrada');
-    
-    // Volver a modo cliente
-    modoActual = 'cliente';
-    document.getElementById('clienteMode').classList.remove('oculto');
-    document.getElementById('adminMode').classList.remove('visible');
-    document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user-cog"></i> <span class="btn-texto">Modo Admin</span>';
-    document.getElementById('backupButtons').style.display = 'none';
-    document.getElementById('btnLogout').style.display = 'none';
-    renderizarCliente();
-  } catch (error) {
-    console.error('Error al cerrar sesión:', error);
-    mostrarToast('❌ Error al cerrar sesión', true);
-  }
-}
-
-// ===== FUNCIONES DE UI LOGIN =====
+// ===== FUNCIONES DE UI =====
 
 function mostrarLogin() {
-  document.getElementById('loginOverlay').classList.add('visible');
+  const overlay = document.getElementById('loginOverlay');
+  overlay.classList.add('visible');
+  overlay.style.display = 'flex';
   document.getElementById('registerOverlay').classList.remove('visible');
+  document.getElementById('registerOverlay').style.display = 'none';
   document.getElementById('loginError').classList.remove('show');
   document.getElementById('loginError').textContent = '';
-  document.getElementById('loginEmail').focus();
+  document.getElementById('loginPassword').value = '';
+  
+  setTimeout(() => {
+    document.getElementById('loginEmail').focus();
+  }, 100);
 }
 
 function ocultarLogin() {
   document.getElementById('loginOverlay').classList.remove('visible');
+  document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('registerOverlay').classList.remove('visible');
+  document.getElementById('registerOverlay').style.display = 'none';
 }
 
 function mostrarRegistro() {
   document.getElementById('loginOverlay').classList.remove('visible');
+  document.getElementById('loginOverlay').style.display = 'none';
   document.getElementById('registerOverlay').classList.add('visible');
+  document.getElementById('registerOverlay').style.display = 'flex';
   document.getElementById('registerError').classList.remove('show');
   document.getElementById('registerError').textContent = '';
   document.getElementById('registerName').focus();
@@ -1860,6 +1905,67 @@ function mostrarErrorRegistro(mensaje) {
   errorDiv.classList.add('show');
   document.getElementById('registerBtn').innerHTML = '<i class="fas fa-user-plus"></i> Registrarse';
   document.getElementById('registerBtn').disabled = false;
+}
+
+// ===== TOGGLE MODO =====
+
+function toggleModo() {
+  if (modoActual === 'cliente') {
+    if (usuarioActual && esAdmin) {
+      mostrarAdmin();
+    } else {
+      mostrarLogin();
+    }
+  } else {
+    cerrarSesion();
+  }
+}
+
+function mostrarAdmin() {
+  modoActual = 'admin';
+  document.getElementById('clienteMode').classList.add('oculto');
+  document.getElementById('adminMode').classList.add('visible');
+  document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user"></i> <span class="btn-texto">Modo Cliente</span>';
+  document.getElementById('backupButtons').style.display = 'flex';
+  document.getElementById('btnLogout').style.display = 'inline-flex';
+  ocultarLogin();
+  renderizarAdmin();
+  cargarUsuarios();
+}
+
+async function cerrarSesion() {
+  try {
+    await auth.signOut();
+    mostrarToast('👋 Sesión cerrada');
+    
+    modoActual = 'cliente';
+    document.getElementById('clienteMode').classList.remove('oculto');
+    document.getElementById('adminMode').classList.remove('visible');
+    document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user-cog"></i> <span class="btn-texto">Modo Admin</span>';
+    document.getElementById('backupButtons').style.display = 'none';
+    document.getElementById('btnLogout').style.display = 'none';
+    ocultarLogin();
+    renderizarCliente();
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+    mostrarToast('❌ Error al cerrar sesión', true);
+  }
+}
+
+// ===== VERIFICAR ROL =====
+
+async function verificarRolAdmin(uid) {
+  try {
+    const doc = await db.collection('usuarios').doc(uid).get();
+    if (doc.exists) {
+      const data = doc.data();
+      return data.rol === 'admin' || data.rol === 'superadmin';
+    }
+    return false;
+  } catch (error) {
+    console.error('Error verificando rol:', error);
+    return false;
+  }
 }
 
 // ============================================================
@@ -2102,6 +2208,55 @@ async function eliminarTurnoFirestore(id) {
 }
 
 // ============================================================
+// ===== GESTIÓN DE USUARIOS =====
+// ============================================================
+async function cargarUsuarios() {
+  try {
+    const snapshot = await db.collection('usuarios').get();
+    usuariosRegistrados = [];
+    snapshot.forEach(doc => {
+      usuariosRegistrados.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    renderizarUsuarios();
+  } catch (error) {
+    console.error('Error cargando usuarios:', error);
+  }
+}
+
+function renderizarUsuarios() {
+  const container = document.getElementById('listaUsuarios');
+  if (!container) return;
+  
+  if (usuariosRegistrados.length === 0) {
+    container.innerHTML = '<p style="color:var(--marron); padding:20px; text-align:center;">No hay usuarios registrados</p>';
+    return;
+  }
+  
+  let html = '<div style="overflow-x:auto;"><table class="tabla"><thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>';
+  
+  usuariosRegistrados.forEach(u => {
+    const rolBadge = u.rol === 'admin' ? 'badge-rol-admin' : 'badge-rol-peluquero';
+    const rolIcon = u.rol === 'admin' ? '👑' : '✂️';
+    const fecha = u.fechaCreacion ? new Date(u.fechaCreacion.seconds * 1000).toLocaleDateString() : '—';
+    const estado = u.activo ? '🟢 Activo' : '🔴 Inactivo';
+    
+    html += `<tr>
+      <td>${escapeHtml(u.nombre || '—')}</td>
+      <td>${escapeHtml(u.email || '—')}</td>
+      <td><span class="badge-tamano ${rolBadge}">${rolIcon} ${escapeHtml(u.rol || 'usuario')}</span></td>
+      <td>${fecha}</td>
+      <td>${estado}</td>
+    </tr>`;
+  });
+  
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+// ============================================================
 // ===== BACKUP =====
 // ============================================================
 async function descargarBackup() {
@@ -2219,32 +2374,80 @@ async function restaurarBackup(event) {
 }
 
 // ============================================================
-// ===== TOGGLE MODO =====
+// ===== REPORTE PDF =====
 // ============================================================
-function toggleModo() {
-  if (modoActual === 'cliente') {
-    if (!usuarioActual) {
-      mostrarLogin();
-      return;
-    }
-    if (!esAdmin) {
-      mostrarToast('❌ No tienes permisos de administrador', true);
-      return;
-    }
-    mostrarAdmin();
-  } else {
-    cerrarSesion();
+async function generarReportePDF() {
+  if (clientes.length === 0) {
+    mostrarToast('⚠️ No hay datos para generar el PDF', true);
+    return;
   }
-}
 
-function mostrarAdmin() {
-  modoActual = 'admin';
-  document.getElementById('clienteMode').classList.add('oculto');
-  document.getElementById('adminMode').classList.add('visible');
-  document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user"></i> <span class="btn-texto">Modo Cliente</span>';
-  document.getElementById('backupButtons').style.display = 'flex';
-  document.getElementById('btnLogout').style.display = 'inline-flex';
-  renderizarAdmin();
+  try {
+    mostrarToast('📄 Generando PDF...');
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape', 'mm', 'a4');
+    
+    // Título
+    doc.setFontSize(18);
+    doc.setTextColor(212, 118, 43);
+    doc.text('🐾 Familia Animal - Reporte de Turnos', 20, 20);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generado: ${new Date().toLocaleString()}`, 20, 30);
+    doc.text(`Total de turnos: ${clientes.length}`, 20, 37);
+    
+    // Estadísticas rápidas
+    const futuros = clientes.filter(c => esFechaFuturaLocal(c.fecha)).length;
+    const proximos = clientes.filter(c => { let d = diasRestantesLocal(c.fecha); return d > 0 && d <= 7; }).length;
+    const vencidos = clientes.filter(c => diasRestantesLocal(c.fecha) <= 0 && !esFechaFuturaLocal(c.fecha)).length;
+    
+    doc.text(`📊 Turnos futuros: ${futuros} | Próximos: ${proximos} | Vencidos: ${vencidos}`, 20, 44);
+    
+    // Tabla
+    const columns = ['Dueño', 'Mascota', 'Raza', 'Tamaño', 'Teléfono', 'Fecha', 'Hora', 'Estado'];
+    const rows = clientes.slice(0, 50).map(c => {
+      const estado = obtenerEstadoCliente(c);
+      const estadoTexto = estado === "futuro" ? "Futuro" : (estado === "proximo" ? "Próximo" : (estado === "vencido" ? "Vencido" : "Normal"));
+      const infoTamano = TAMAÑOS[c.tamano] || TAMAÑOS['chico'];
+      return [
+        c.duenio || '—',
+        c.mascota || '—',
+        c.raza || '—',
+        infoTamano.nombre.replace('🐕 ', ''),
+        c.telefono || '—',
+        formatearFechaLocal(c.fecha),
+        c.hora || '10:00',
+        estadoTexto
+      ];
+    });
+    
+    doc.autoTable({
+      head: [columns],
+      body: rows,
+      startY: 52,
+      theme: 'striped',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [212, 118, 43] }
+    });
+    
+    // Pie de página
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Página ${i} de ${pageCount} - Familia Animal Petshop & Pelu Canina`, doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: 'center' });
+    }
+    
+    doc.save(`reporte_turnos_${new Date().toISOString().slice(0,10)}.pdf`);
+    mostrarToast('✅ PDF generado correctamente');
+    
+  } catch (error) {
+    console.error('Error generando PDF:', error);
+    mostrarToast('❌ Error al generar el PDF', true);
+  }
 }
 
 // ============================================================
@@ -3009,7 +3212,7 @@ function cancelarCargaTurno() {
 }
 
 // ============================================================
-// ===== ADMIN: TABLA =====
+// ===== ADMIN: TABLA CON PAGINACIÓN =====
 // ============================================================
 function renderizarTabla() {
   const tbody = document.getElementById("tablaClientes");
@@ -3031,15 +3234,28 @@ function renderizarTabla() {
 
   filtrados.sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
   
+  // Calcular paginación
+  totalPaginas = Math.ceil(filtrados.length / ITEMS_POR_PAGINA);
+  if (paginaActual > totalPaginas) paginaActual = totalPaginas || 1;
+  
+  const inicio = (paginaActual - 1) * ITEMS_POR_PAGINA;
+  const fin = Math.min(inicio + ITEMS_POR_PAGINA, filtrados.length);
+  const paginaDatos = filtrados.slice(inicio, fin);
+  
+  // Actualizar controles de paginación
+  document.getElementById('pageInfo').textContent = `Página ${paginaActual} de ${totalPaginas || 1} (${filtrados.length} turnos)`;
+  document.getElementById('prevPageBtn').disabled = paginaActual <= 1;
+  document.getElementById('nextPageBtn').disabled = paginaActual >= totalPaginas || totalPaginas === 0;
+  
   tbody.innerHTML = "";
 
-  if (filtrados.length === 0) {
+  if (paginaDatos.length === 0) {
     tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:40px;">📋 No hay turnos registrados</td></tr>`;
     return;
   }
 
   const diasMap = new Map();
-  filtrados.forEach(c => {
+  paginaDatos.forEach(c => {
     if (!diasMap.has(c.fecha)) {
       diasMap.set(c.fecha, []);
     }
@@ -3098,6 +3314,13 @@ function renderizarTabla() {
   }
 }
 
+function cambiarPagina(delta) {
+  const nuevaPagina = paginaActual + delta;
+  if (nuevaPagina < 1 || nuevaPagina > totalPaginas) return;
+  paginaActual = nuevaPagina;
+  renderizarTabla();
+}
+
 function reenviarConfirmacion(id) {
   const cliente = clientes.find(c => c.id === id);
   if (cliente && cliente.telefono) {
@@ -3149,9 +3372,9 @@ Por favor, confirmá que recibiste esta información. ¡Gracias! 🐾`;
   window.open(`https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensaje)}`, '_blank');
 }
 
-function buscarCliente() { renderizarTabla(); }
-function limpiarBusqueda() { document.getElementById("buscarCliente").value = ""; renderizarTabla(); }
-function aplicarFiltro(filtro) { filtroActual = filtro; renderizarTabla(); }
+function buscarCliente() { paginaActual = 1; renderizarTabla(); }
+function limpiarBusqueda() { document.getElementById("buscarCliente").value = ""; paginaActual = 1; renderizarTabla(); }
+function aplicarFiltro(filtro) { filtroActual = filtro; paginaActual = 1; renderizarTabla(); }
 
 async function eliminarCliente(id) { 
   if(confirm("¿Eliminar este turno?")){ 
@@ -3391,29 +3614,74 @@ function switchTab(tab, btn) {
   btn.classList.add('active');
   if (tab === 'estadisticas') renderizarEstadisticas();
   if (tab === 'recordatorios') renderizarListaRecordatorios();
-  if (tab === 'clientes') renderizarTabla();
+  if (tab === 'clientes') { paginaActual = 1; renderizarTabla(); }
+  if (tab === 'usuarios') cargarUsuarios();
 }
+
+// ============================================================
+// ===== TESTS BÁSICOS =====
+// ============================================================
+function ejecutarTests() {
+  console.log('🧪 Ejecutando tests básicos...');
+  
+  // Test 1: Verificar que los tamaños están definidos
+  console.assert(TAMAÑOS.chico, '❌ Tamaño chico no definido');
+  console.assert(TAMAÑOS.mediano, '❌ Tamaño mediano no definido');
+  console.assert(TAMAÑOS.grande, '❌ Tamaño grande no definido');
+  console.assert(TAMAÑOS.extragrande, '❌ Tamaño extragrande no definido');
+  
+  // Test 2: Verificar funciones de fecha
+  const fechaTest = '2026-07-10';
+  console.assert(formatearFechaLocal(fechaTest) === '10/07/2026', '❌ formatearFechaLocal falló');
+  
+  // Test 3: Verificar que clientes es un array
+  console.assert(Array.isArray(clientes), '❌ clientes no es un array');
+  
+  // Test 4: Verificar sumarMinutos
+  console.assert(sumarMinutos('10:00', 60) === '11:00', '❌ sumarMinutos falló');
+  console.assert(sumarMinutos('18:30', 120) === '20:30', '❌ sumarMinutos falló');
+  
+  // Test 5: Verificar compararHoras
+  console.assert(compararHoras('10:00', '09:00') > 0, '❌ compararHoras falló');
+  console.assert(compararHoras('09:00', '10:00') < 0, '❌ compararHoras falló');
+  console.assert(compararHoras('10:00', '10:00') === 0, '❌ compararHoras falló');
+  
+  console.log('✅ Todos los tests básicos pasaron!');
+}
+
+// Ejecutar tests después de cargar
+setTimeout(ejecutarTests, 1000);
 
 // ============================================================
 // ===== INICIALIZACIÓN =====
 // ============================================================
 async function init() {
-  // Mostrar login si no hay usuario autenticado
-  if (!auth.currentUser) {
-    mostrarLogin();
-  }
-  
+  // Cargar datos de Firestore PRIMERO (sin autenticación)
   await cargarTurnosFirestore();
   
+  // Configurar la interfaz
   const hoy = new Date().toISOString().slice(0,10);
   document.getElementById('fechaAdmin').value = hoy;
   
+  // Mostrar modo cliente por defecto
   document.getElementById('clienteMode').classList.remove('oculto');
   document.getElementById('adminMode').classList.remove('visible');
   document.getElementById('backupButtons').style.display = 'none';
+  document.getElementById('btnLogout').style.display = 'none';
   
   renderizarAdmin();
   renderizarCliente();
+  
+  // Verificar si ya hay sesión activa
+  const user = auth.currentUser;
+  if (user) {
+    const esAdminUser = await verificarRolAdmin(user.uid);
+    if (esAdminUser) {
+      document.getElementById('btnLogout').style.display = 'inline-flex';
+      usuarioActual = user;
+      esAdmin = true;
+    }
+  }
   
   // Escuchar cambios en tiempo real
   db.collection(COLECCION).onSnapshot(() => {
@@ -3428,6 +3696,9 @@ async function init() {
   });
   
   mostrarToast('✅ Conectado a la nube');
+  
+  // Ejecutar tests automáticamente
+  ejecutarTests();
 }
 
 // Iniciar la aplicación
