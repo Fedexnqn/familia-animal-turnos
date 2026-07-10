@@ -2864,13 +2864,22 @@ function compartirDisponibilidad() {
 // ============================================================
 // ===== RENDERIZAR ADMIN =====
 // ============================================================
+// ===== RENDERIZAR ADMIN =====
 function renderizarAdmin() {
-  actualizarContadores();
-  renderizarTabla();
-  renderizarCalendarioAdmin();
-  renderizarEstadisticas();
-  renderizarListaRecordatorios();
-  actualizarHorariosDiaAdmin();
+  console.log('🔄 Renderizando admin...');
+  
+  try {
+    actualizarContadores();
+    renderizarTabla();
+    renderizarCalendarioAdmin();
+    renderizarEstadisticas();  // ← Ahora maneja el error internamente
+    renderizarListaRecordatorios();
+    actualizarHorariosDiaAdmin();
+    console.log('✅ Admin renderizado correctamente');
+  } catch (error) {
+    console.error('❌ Error renderizando admin:', error);
+    mostrarToast('⚠️ Error al cargar el panel admin', true);
+  }
 }
 
 // ============================================================
@@ -3758,25 +3767,120 @@ async function guardarModal() {
 // ============================================================
 // ===== ADMIN: ESTADÍSTICAS =====
 // ============================================================
+// ===== ADMIN: ESTADÍSTICAS (CON VERIFICACIÓN DE CHART.JS) =====
 function renderizarEstadisticas() {
+  console.log('📊 Renderizando estadísticas...');
+  
+  // ✅ VERIFICAR QUE CHART.JS ESTÉ CARGADO
+  if (typeof Chart === 'undefined') {
+    console.warn('⚠️ Chart.js no está cargado, esperando...');
+    // Reintentar después de 1 segundo
+    setTimeout(() => {
+      if (typeof Chart !== 'undefined') {
+        console.log('✅ Chart.js cargado, renderizando estadísticas...');
+        renderizarEstadisticas();
+      } else {
+        console.error('❌ Chart.js no se pudo cargar');
+        // Mostrar mensaje en lugar de gráficos
+        const razasContainer = document.getElementById('razasChart');
+        const estadoContainer = document.getElementById('estadoChart');
+        if (razasContainer) {
+          razasContainer.parentElement.innerHTML = `
+            <p style="color:var(--marron);padding:20px;text-align:center;">📊 Gráficos no disponibles</p>
+          `;
+        }
+        if (estadoContainer) {
+          estadoContainer.parentElement.innerHTML = `
+            <p style="color:var(--marron);padding:20px;text-align:center;">📊 Gráficos no disponibles</p>
+          `;
+        }
+      }
+    }, 1000);
+    return;
+  }
+  
+  // Si Chart.js está cargado, continuar
+  console.log('✅ Chart.js disponible');
+  
+  // Actualizar contadores
   document.getElementById("statTotal").innerText = clientes.length;
   document.getElementById("statFuturos").innerText = clientes.filter(c => esFechaFuturaLocal(c.fecha)).length;
   document.getElementById("statPorVencer").innerText = clientes.filter(c => { let d = diasRestantesLocal(c.fecha); return d > 0 && d <= 7; }).length;
   document.getElementById("statVencidos").innerText = clientes.filter(c => diasRestantesLocal(c.fecha) <= 0 && !esFechaFuturaLocal(c.fecha)).length;
 
+  // Gráfico de razas
   let razas = {};
   clientes.forEach(c => { if (c.raza) razas[c.raza] = (razas[c.raza] || 0) + 1; });
-  if (razasChart) razasChart.destroy();
-  razasChart = new Chart(document.getElementById("razasChart"), { type: 'bar', data: { labels: Object.keys(razas), datasets: [{ label: 'Cantidad', data: Object.values(razas), backgroundColor: '#E8923C' }] }, options: { responsive: true } });
+  
+  const razasCanvas = document.getElementById("razasChart");
+  if (razasCanvas && razasCanvas.parentElement) {
+    // Destruir gráfico anterior si existe
+    if (razasChart) {
+      razasChart.destroy();
+      razasChart = null;
+    }
+    
+    try {
+      razasChart = new Chart(razasCanvas, { 
+        type: 'bar', 
+        data: { 
+          labels: Object.keys(razas).length > 0 ? Object.keys(razas) : ['Sin razas'], 
+          datasets: [{ 
+            label: 'Cantidad', 
+            data: Object.keys(razas).length > 0 ? Object.values(razas) : [0], 
+            backgroundColor: '#E8923C' 
+          }] 
+        }, 
+        options: { 
+          responsive: true,
+          plugins: {
+            legend: { display: false }
+          }
+        } 
+      });
+      console.log('✅ Gráfico de razas creado');
+    } catch (error) {
+      console.error('❌ Error creando gráfico de razas:', error);
+    }
+  }
 
+  // Gráfico de estados
   let fut = clientes.filter(c => esFechaFuturaLocal(c.fecha)).length;
   let prox = clientes.filter(c => { let d = diasRestantesLocal(c.fecha); return d > 0 && d <= 7; }).length;
   let ven = clientes.filter(c => diasRestantesLocal(c.fecha) <= 0 && !esFechaFuturaLocal(c.fecha)).length;
   let nor = clientes.length - fut - prox - ven;
-  if (estadoChart) estadoChart.destroy();
-  estadoChart = new Chart(document.getElementById("estadoChart"), { type: 'pie', data: { labels: ['Futuros', 'Próximos', 'Vencidos', 'Normal'], datasets: [{ data: [fut, prox, ven, nor], backgroundColor: ['#2196f3', '#f9a825', '#c7362b', '#4CAF50'] }] }, options: { responsive: true } });
+  
+  const estadoCanvas = document.getElementById("estadoChart");
+  if (estadoCanvas && estadoCanvas.parentElement) {
+    // Destruir gráfico anterior si existe
+    if (estadoChart) {
+      estadoChart.destroy();
+      estadoChart = null;
+    }
+    
+    try {
+      estadoChart = new Chart(estadoCanvas, { 
+        type: 'pie', 
+        data: { 
+          labels: ['Futuros', 'Próximos', 'Vencidos', 'Normal'], 
+          datasets: [{ 
+            data: [fut, prox, ven, nor], 
+            backgroundColor: ['#2196f3', '#f9a825', '#c7362b', '#4CAF50'] 
+          }] 
+        }, 
+        options: { 
+          responsive: true,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        } 
+      });
+      console.log('✅ Gráfico de estados creado');
+    } catch (error) {
+      console.error('❌ Error creando gráfico de estados:', error);
+    }
+  }
 }
-
 // ============================================================
 // ===== ADMIN: RECORDATORIOS =====
 // ============================================================
@@ -3868,9 +3972,15 @@ function ejecutarTests() {
 // ============================================================
 // ===== INICIALIZACIÓN =====
 // ============================================================
+// ============================================================
+// ===== INICIALIZACIÓN =====
+// ============================================================
 async function init() {
-  // Cargar datos de Firestore PRIMERO (sin autenticación)
+  console.log('🚀 Iniciando aplicación...');
+  
+  // Cargar datos de Firestore PRIMERO
   await cargarTurnosFirestore();
+  console.log('📊 Datos cargados:', clientes.length, 'turnos');
   
   // Configurar la interfaz
   const hoy = new Date().toISOString().slice(0,10);
@@ -3882,8 +3992,13 @@ async function init() {
   document.getElementById('backupButtons').style.display = 'none';
   document.getElementById('btnLogout').style.display = 'none';
   
-  renderizarAdmin();
-  renderizarCliente();
+  // Renderizar (sin depender de Chart.js)
+  try {
+    renderizarAdmin();
+    renderizarCliente();
+  } catch (error) {
+    console.error('❌ Error en renderizado inicial:', error);
+  }
   
   // Verificar si ya hay sesión activa
   const user = auth.currentUser;
@@ -3896,7 +4011,7 @@ async function init() {
     }
   }
   
-  // Escuchar cambios en tiempo real (optimizado)
+  // Escuchar cambios en tiempo real
   db.collection(COLECCION)
     .orderBy('fecha', 'desc')
     .onSnapshot(() => {
@@ -3911,9 +4026,7 @@ async function init() {
     });
   
   mostrarToast('✅ Conectado a la nube');
-  
-  // Ejecutar tests solo en desarrollo
-  ejecutarTests();
+  console.log('✅ Aplicación iniciada correctamente');
 }
 
 // Iniciar la aplicación
