@@ -1794,13 +1794,15 @@ auth.onAuthStateChanged(async (user) => {
   
   if (user) {
     usuarioActual = user;
-    // Verificar rol SOLO desde Firestore (más seguro)
     esAdmin = await verificarRolAdmin(user.uid);
     
     if (esAdmin) {
       ocultarLogin();
       document.getElementById('btnLogout').style.display = 'inline-flex';
       mostrarToast('✅ Bienvenido ' + (user.displayName || 'Administrador'));
+      
+      // ===== NUEVO: Vincular usuario con OneSignal =====
+      await vincularUsuarioOneSignal(user);
       
       // FORZAR ENTRADA AL MODO ADMIN
       modoActual = 'admin';
@@ -1809,16 +1811,13 @@ auth.onAuthStateChanged(async (user) => {
       document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user"></i> <span class="btn-texto">Modo Cliente</span>';
       document.getElementById('backupButtons').style.display = 'flex';
       
-      // Cargar librerías admin dinámicamente
       await cargarLibreriasAdmin();
       renderizarAdmin();
       cargarUsuarios();
       
     } else {
-      // Usuario autenticado pero no admin
       await auth.signOut();
       mostrarErrorLogin('❌ No tienes permisos de administrador');
-      // Volver a modo cliente
       modoActual = 'cliente';
       document.getElementById('clienteMode').classList.remove('oculto');
       document.getElementById('adminMode').classList.remove('visible');
@@ -1828,13 +1827,11 @@ auth.onAuthStateChanged(async (user) => {
       ocultarLogin();
     }
   } else {
-    // No hay usuario autenticado
     usuarioActual = null;
     esAdmin = false;
     document.getElementById('btnLogout').style.display = 'none';
     ocultarLogin();
     
-    // Si está en modo admin, volver a cliente
     if (modoActual === 'admin') {
       modoActual = 'cliente';
       document.getElementById('clienteMode').classList.remove('oculto');
@@ -1844,7 +1841,6 @@ auth.onAuthStateChanged(async (user) => {
     }
   }
 });
-
 // ===== INICIAR SESIÓN =====
 async function iniciarSesion(event) {
   event.preventDefault();
@@ -2703,54 +2699,184 @@ async function generarReportePDF() {
   }
 }
 
+// ===== VINCULAR USUARIO CON ONESIGNAL =====
+
+async function vincularUsuarioOneSignal(user) {
+  try {
+    console.log('🔗 Vinculando usuario con OneSignal...');
+    
+    const OneSignal = window.OneSignal;
+    if (!OneSignal) {
+      console.warn('⚠️ OneSignal no disponible');
+      return false;
+    }
+    
+    // Verificar que el usuario esté suscripto
+    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+    if (!isSubscribed) {
+      console.warn('⚠️ Usuario no suscripto. Activá las notificaciones primero.');
+      return false;
+    }
+    
+    // Establecer externalId con el UID de Firebase
+    await OneSignal.User.setExternalId(user.uid);
+    console.log('✅ ExternalId asignado:', user.uid);
+    
+    // Verificar que se haya asignado correctamente
+    const nuevoExternalId = await OneSignal.User.externalId;
+    if (nuevoExternalId === user.uid) {
+      console.log('✅ Vinculación exitosa!');
+      mostrarToast('✅ Usuario vinculado a notificaciones');
+      return true;
+    } else {
+      console.warn('⚠️ No se pudo verificar la vinculación');
+      return false;
+    }
+    
+  } catch (error) {
+    console.error('❌ Error vinculando usuario:', error);
+    return false;
+  }
+}
+
 // ============================================================
 // ===== ONESIGNAL - NOTIFICACIONES (SOLO APP ID) =====
 // ============================================================
 async function suscribirNotificaciones() {
   try {
-    console.log('🔔 Intentando activar notificaciones...');
+    console.log('🔔 Activando notificaciones...');
     
     const OneSignal = window.OneSignal;
     if (!OneSignal) {
-      console.error('❌ OneSignal no está cargado');
-      mostrarToast('❌ OneSignal no está cargado. Recargá la página.', true);
+      mostrarToast('❌ OneSignal no está cargado', true);
       return;
     }
     
+    // Verificar que haya un usuario autenticado
+    if (!usuarioActual) {
+      mostrarToast('⚠️ Debes iniciar sesión primero', true);
+      return;
+    }
+    
+    // Verificar estado actual
     const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+    console.log('📱 Estado actual:', isSubscribed);
     
     if (isSubscribed) {
-      mostrarToast('✅ Ya estás suscripto a las notificaciones');
+      // Ya está suscripto, solo vincular
+      mostrarToast('✅ Ya estás suscripto. Vinculando usuario...');
+      await vincularUsuarioOneSignal(usuarioActual);
+      
+      // Verificar que se haya vinculado
+      const externalId = await OneSignal.User.externalId;
+      if (externalId) {
+        mostrarToast('✅ Notificaciones activas y vinculadas! 📱');
+      } else {
+        mostrarToast('⚠️ Suscripto pero no vinculado. Reintentá.', true);
+      }
       return;
     }
     
+    // Solicitar suscripción
+    mostrarToast('📱 Solicitando permisos...');
     await OneSignal.User.PushSubscription.setOptIn(true);
-    mostrarToast('✅ Notificaciones activadas! 📱');
+    
+    // Esperar un momento para que se complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Verificar que se haya activado
+    const newState = await OneSignal.User.PushSubscription.optedIn;
+    if (newState) {
+      mostrarToast('✅ Notificaciones activadas!');
+      
+      // Vincular usuario
+      await vincularUsuarioOneSignal(usuarioActual);
+      
+      // Verificar vinculación
+      const externalId = await OneSignal.User.externalId;
+      if (externalId) {
+        console.log('✅ Todo configurado correctamente');
+        mostrarToast('✅ ¡Listo! Recibirás notificaciones de nuevos turnos 📱');
+      } else {
+        console.warn('⚠️ Suscripto pero no vinculado');
+        mostrarToast('⚠️ Activado pero sin vincular. Reintentá.', true);
+      }
+    } else {
+      mostrarToast('⚠️ No se pudo activar. Revisá los permisos.', true);
+    }
     
   } catch (error) {
-    console.error('❌ Error:', error);
-    mostrarToast('⚠️ Para activar notificaciones, asegurate de que la app esté instalada y recargá la página.', true);
+    console.error('❌ Error en suscripción:', error);
+    mostrarToast('❌ Error al activar notificaciones', true);
   }
 }
 
 // ===== ENVIAR NOTIFICACIÓN PUSH (USANDO CLOUD FUNCTION) =====
 async function enviarNotificacionPush(turno, infoTamano) {
   try {
-    // Esta función ahora llama a la Cloud Function en lugar de llamar directamente a OneSignal
-    // La Cloud Function maneja la API Key de forma segura en el backend
+    console.log('📨 Enviando notificación push...');
     
-    // Por ahora, solo registramos que se enviaría la notificación
-    console.log('📨 Notificación push para:', turno.mascota);
+    const OneSignal = window.OneSignal;
+    if (!OneSignal) {
+      console.error('❌ OneSignal no cargado');
+      return false;
+    }
+
+    // Verificar suscripción
+    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+    if (!isSubscribed) {
+      console.log('⚠️ Usuario no suscripto');
+      return false;
+    }
+
+    // Obtener externalId (debe estar vinculado)
+    const userId = await OneSignal.User.externalId;
+    if (!userId) {
+      console.warn('⚠️ Usuario no vinculado. Intentando vincular...');
+      await vincularUsuarioOneSignal(usuarioActual);
+      // Reintentar obtener externalId
+      const nuevoId = await OneSignal.User.externalId;
+      if (!nuevoId) {
+        console.error('❌ No se pudo vincular el usuario');
+        return false;
+      }
+    }
+
+    // Construir mensaje
+    const mensaje = `🐾 ${turno.mascota} - ${turno.duenio}`;
+    const subtitulo = `📅 ${formatearFechaLocal(turno.fecha)} ${turno.hora}`;
+
+    // Enviar notificación
+    await OneSignal.Notifications.addNotification({
+      contents: { 
+        en: mensaje,
+        es: mensaje
+      },
+      headings: { 
+        en: "📅 Nueva reserva",
+        es: "📅 Nueva reserva"
+      },
+      subtitle: {
+        en: subtitulo,
+        es: subtitulo
+      },
+      data: {
+        turnoId: turno.id || 'nuevo',
+        fecha: turno.fecha,
+        hora: turno.hora,
+        mascota: turno.mascota,
+        duenio: turno.duenio,
+        type: 'nuevo_turno'
+      },
+      include_external_user_ids: [userId]
+    });
     
-    // TODO: Cuando tengas Cloud Functions configurada, descomentar:
-    /*
-    const enviarNotificacion = firebase.functions().httpsCallable('enviarNotificacion');
-    const result = await enviarNotificacion({ turno, infoTamano });
-    console.log('📨 Notificación enviada:', result.data);
-    */
-    
+    console.log('✅ Notificación push enviada a:', userId);
+    return true;
+
   } catch (error) {
-    console.error('❌ Error al enviar notificación:', error);
+    console.error('❌ Error al enviar:', error);
+    return false;
   }
 }
 
