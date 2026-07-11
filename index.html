@@ -2603,11 +2603,11 @@ async function confirmarTurnoCliente() {
   const tamano = selectTamano ? selectTamano.value : clienteTamanoSeleccionado;
 
   if (!mascota || !duenio || !telefono) {
-    mostrarToast('❌ Completá todos los campos obligatorios (*)', true);
+    alert('Completá todos los campos obligatorios (*)');
     return;
   }
   if (!clienteSeleccionado.fecha || !clienteSeleccionado.hora) {
-    mostrarToast('❌ Seleccioná un día y horario', true);
+    alert('Seleccioná un día y horario');
     return;
   }
 
@@ -2615,7 +2615,7 @@ async function confirmarTurnoCliente() {
   const horarios = obtenerHorariosDisponibles(clienteSeleccionado.fecha, duracion);
   const horarioSeleccionado = horarios.find(h => h.hora === clienteSeleccionado.hora);
   if (horarioSeleccionado?.ocupado) {
-    mostrarToast('❌ El horario seleccionado no está disponible. Elegí otro.', true);
+    alert('❌ El horario seleccionado no está disponible. Elegí otro.');
     renderizarCliente();
     return;
   }
@@ -2636,13 +2636,11 @@ async function confirmarTurnoCliente() {
 
   const guardado = await guardarTurnoFirestore(nuevoTurno);
   if (!guardado) {
-    mostrarToast('❌ Error al confirmar el turno. Intentá de nuevo.', true);
+    alert('❌ Error al guardar el turno. Intentá de nuevo.');
     return;
   }
 
-  mostrarToast('✅ Turno confirmado correctamente');
-  
-  await enviarNotificacionPush(nuevoTurno, infoTamano);
+  actualizarContadores();
 
   const mensajeParaDueno = `🐾 *¡Hola! Soy ${duenio} y acabo de reservar un turno en Familia Animal!* 🐾
 
@@ -2667,20 +2665,27 @@ async function confirmarTurnoCliente() {
 
 ¡Nuevo turno agendado! ✂️`;
 
+  await enviarNotificacionPush(nuevoTurno, infoTamano);
+
   const TU_NUMERO = "5492996055561";
   const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
   const urlWhatsAppDueño = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensajeParaDueno)}`;
 
-  PELUQUEROS.forEach(num => {
-    const numLimpio = num.replace(/[^0-9+]/g, '');
-    window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensajePeluqueros)}`, '_blank');
-  });
-
+  // MOSTRAR MODAL DE RECORDATORIO Y SOLO AQUÍ ABRIR WHATSAPP
   mostrarModalRecordatorio(() => {
+    // Abrir WhatsApp del dueño SOLO DESPUÉS del recordatorio
     window.open(urlWhatsAppDueño, '_blank');
+    
+    // Abrir WhatsApp de los peluqueros
+    PELUQUEROS.forEach(num => {
+      const numLimpio = num.replace(/[^0-9+]/g, '');
+      window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensajePeluqueros)}`, '_blank');
+    });
+    
     clienteSeleccionado = { fecha: null, hora: null };
     renderizarCliente();
     renderizarAdmin();
+    mostrarToast('✅ Turno confirmado!');
   });
 }
 
