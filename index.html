@@ -2667,17 +2667,21 @@ async function confirmarTurnoCliente() {
   const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
   const urlWhatsAppDueño = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensajeParaDueno)}`;
 
-  PELUQUEROS.forEach(num => {
-    const numLimpio = num.replace(/[^0-9+]/g, '');
-    window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensajePeluqueros)}`, '_blank');
-  });
-
+  // MOSTRAR MODAL DE RECORDATORIO Y SOLO AQUÍ ABRIR WHATSAPP
   mostrarModalRecordatorio(() => {
+    // Abrir WhatsApp del dueño SOLO DESPUÉS del recordatorio
     window.open(urlWhatsAppDueño, '_blank');
+    
+    // Abrir WhatsApp de los peluqueros
+    PELUQUEROS.forEach(num => {
+      const numLimpio = num.replace(/[^0-9+]/g, '');
+      window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensajePeluqueros)}`, '_blank');
+    });
+    
     clienteSeleccionado = { fecha: null, hora: null };
     renderizarCliente();
     renderizarAdmin();
-    mostrarToast('✅ Turno confirmado! El dueño recibirá tu reserva por WhatsApp');
+    mostrarToast('✅ Turno confirmado!');
   });
 }
 
