@@ -145,14 +145,14 @@
   .cliente-mode.oculto { display: none; }
 
   .cliente-header { 
-  background: linear-gradient(135deg, var(--naranja-oscuro), var(--verde-oscuro)); 
-  padding: 40px 20px; 
-  border-radius: 48px; 
-  color: white; 
-  text-align: center; 
-  margin-bottom: 30px; 
-  box-shadow: 0 10px 30px rgba(212, 118, 43, 0.3);
-}
+    background: linear-gradient(135deg, var(--naranja-oscuro), var(--verde-oscuro)); 
+    padding: 40px 20px; 
+    border-radius: 48px; 
+    color: white; 
+    text-align: center; 
+    margin-bottom: 30px; 
+    box-shadow: 0 10px 30px rgba(212, 118, 43, 0.3);
+  }
   .cliente-header h1 { 
     font-size: 2.2rem; 
     font-weight: 700; 
@@ -1182,16 +1182,15 @@
   <!-- ===== MODO CLIENTE ===== -->
   <div class="cliente-mode" id="clienteMode">
     <div class="cliente-header">
-  <h1>
-    <!-- 👇 AGREGA ESTO 👇 -->
-    <img src="https://github.com/Fedexnqn/familia-animal-turnos/blob/main/icon-512.png?raw=true" 
-         alt="Familia Animal" 
-         style="height:60px; border-radius:12px; margin-right:15px;">
-    
-    <span class="petshop">Familia Animal</span>
-    <span style="font-size:1.4rem;">🐾</span>
-  </h1>
-  <p>Petshop & Peluquería Canina · Reservá tu turno online</p>
+      <h1>
+        <i class="fas fa-paw"></i> 
+        <span class="petshop">Familia Animal</span>
+        <span style="font-size:1.4rem;">🐾</span>
+      </h1>
+      <p>Petshop & Peluquería Canina · Reservá tu turno online</p>
+    </div>
+    <div id="clienteContent">
+      <div class="cargando"><i class="fas fa-spinner fa-spin"></i> Cargando turnos disponibles...</div>
     </div>
   </div>
 
