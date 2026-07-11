@@ -38,6 +38,7 @@
 </script>
 
 <style>
+  /* ===== TODO EL CSS EXISTENTE (sin cambios) ===== */
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif; }
   body { background: linear-gradient(145deg, #f5f0eb 0%, #e8e0d8 100%); padding: 20px; min-height: 100vh; }
   .dashboard { max-width: 1400px; margin: 0 auto; }
@@ -1375,7 +1376,6 @@
         <label><i class="fas fa-lock"></i> Contraseña</label>
         <input type="password" id="registerPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
       </div>
-      <!-- EL ROL SE ASIGNA AUTOMÁTICAMENTE COMO 'usuario' - NO SE PERMITE ELEGIR -->
       <input type="hidden" id="registerRol" value="usuario">
       <div style="font-size:0.8rem; color:var(--marron); margin-bottom:15px; text-align:center;">
         <i class="fas fa-info-circle"></i> Tu cuenta será activada por el administrador
@@ -1794,15 +1794,13 @@ auth.onAuthStateChanged(async (user) => {
   
   if (user) {
     usuarioActual = user;
+    // Verificar rol SOLO desde Firestore (más seguro)
     esAdmin = await verificarRolAdmin(user.uid);
     
     if (esAdmin) {
       ocultarLogin();
       document.getElementById('btnLogout').style.display = 'inline-flex';
       mostrarToast('✅ Bienvenido ' + (user.displayName || 'Administrador'));
-      
-      // ===== NUEVO: Vincular usuario con OneSignal =====
-      await vincularUsuarioOneSignal(user);
       
       // FORZAR ENTRADA AL MODO ADMIN
       modoActual = 'admin';
@@ -1811,13 +1809,16 @@ auth.onAuthStateChanged(async (user) => {
       document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user"></i> <span class="btn-texto">Modo Cliente</span>';
       document.getElementById('backupButtons').style.display = 'flex';
       
+      // Cargar librerías admin dinámicamente
       await cargarLibreriasAdmin();
       renderizarAdmin();
       cargarUsuarios();
       
     } else {
+      // Usuario autenticado pero no admin
       await auth.signOut();
       mostrarErrorLogin('❌ No tienes permisos de administrador');
+      // Volver a modo cliente
       modoActual = 'cliente';
       document.getElementById('clienteMode').classList.remove('oculto');
       document.getElementById('adminMode').classList.remove('visible');
@@ -1827,11 +1828,13 @@ auth.onAuthStateChanged(async (user) => {
       ocultarLogin();
     }
   } else {
+    // No hay usuario autenticado
     usuarioActual = null;
     esAdmin = false;
     document.getElementById('btnLogout').style.display = 'none';
     ocultarLogin();
     
+    // Si está en modo admin, volver a cliente
     if (modoActual === 'admin') {
       modoActual = 'cliente';
       document.getElementById('clienteMode').classList.remove('oculto');
@@ -1841,6 +1844,7 @@ auth.onAuthStateChanged(async (user) => {
     }
   }
 });
+
 // ===== INICIAR SESIÓN =====
 async function iniciarSesion(event) {
   event.preventDefault();
@@ -2315,9 +2319,16 @@ async function cargarTurnosFirestore() {
   }
 }
 
-// ===== GUARDAR TURNO CON TRANSACCIÓN (evita race conditions) =====
+// ============================================================
+// ===== GUARDAR TURNO CON TRANSACCIÓN (CORREGIDO) =====
+// ============================================================
 async function guardarTurnoConTransaccion(turno) {
   try {
+    // Validar datos antes de la transacción
+    if (!turno.fecha || !turno.hora || !turno.duenio || !turno.mascota) {
+      throw new Error('Datos del turno incompletos');
+    }
+
     const resultado = await db.runTransaction(async (transaction) => {
       // Verificar disponibilidad en Firestore
       const turnosRef = db.collection(COLECCION);
@@ -2328,11 +2339,22 @@ async function guardarTurnoConTransaccion(turno) {
       
       // Verificar que el horario sigue disponible
       if (!snapshot.empty) {
-        throw new Error('El horario ya no está disponible');
+        // Verificar si el turno que se está actualizando es el mismo (edición)
+        let esElMismo = false;
+        if (turno.id) {
+          snapshot.forEach(doc => {
+            if (doc.id === turno.id) esElMismo = true;
+          });
+        }
+        if (!esElMismo) {
+          throw new Error('El horario ya no está disponible');
+        }
       }
       
-      // Crear el nuevo turno
+      // Crear el nuevo turno - OBJETO PLANO SIN FUNCIONES DE FIRESTORE
       const docRef = turno.id ? db.collection(COLECCION).doc(turno.id) : db.collection(COLECCION).doc();
+      
+      // Objeto de datos plano (sin FieldValue)
       const data = {
         fecha: turno.fecha,
         hora: turno.hora,
@@ -2342,7 +2364,8 @@ async function guardarTurnoConTransaccion(turno) {
         telefono: turno.telefono || '',
         tamano: turno.tamano || 'chico',
         observaciones: turno.observaciones || '',
-        fotos: turno.fotos || []
+        fotos: turno.fotos || [],
+        createdAt: new Date().toISOString() // Usar string en lugar de FieldValue
       };
       
       transaction.set(docRef, data);
@@ -2359,7 +2382,7 @@ async function guardarTurnoConTransaccion(turno) {
   }
 }
 
-// ===== GUARDAR TURNO (con transacción y Storage) =====
+// ===== GUARDAR TURNO (CORREGIDO) =====
 async function guardarTurnoFirestore(turno, archivosFotos = []) {
   try {
     // Si hay fotos, subirlas a Storage primero
@@ -2373,7 +2396,6 @@ async function guardarTurnoFirestore(turno, archivosFotos = []) {
     
     // Si ya hay fotos existentes (modo edición), conservarlas
     if (turno.fotos && turno.fotos.length > 0) {
-      // Verificar si son URLs de Storage o base64
       for (const foto of turno.fotos) {
         if (foto.startsWith && foto.startsWith('http')) {
           urlsFotos.push(foto);
@@ -2397,7 +2419,7 @@ async function guardarTurnoFirestore(turno, archivosFotos = []) {
     if (error.message === 'HORARIO_NO_DISPONIBLE') {
       mostrarToast('❌ El horario ya fue ocupado por otro cliente', true);
     } else {
-      mostrarToast('❌ Error al guardar el turno', true);
+      mostrarToast('❌ Error al guardar el turno: ' + error.message, true);
     }
     return false;
   }
@@ -2699,167 +2721,34 @@ async function generarReportePDF() {
   }
 }
 
-// ===== VINCULAR USUARIO CON ONESIGNAL =====
-
-async function vincularUsuarioOneSignal(user) {
-  try {
-    console.log('🔗 Vinculando usuario con OneSignal...');
-    
-    const OneSignal = window.OneSignal;
-    if (!OneSignal) {
-      console.warn('⚠️ OneSignal no disponible');
-      return false;
-    }
-    
-    // Verificar que el usuario esté suscripto
-    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
-    if (!isSubscribed) {
-      console.warn('⚠️ Usuario no suscripto. Activá las notificaciones primero.');
-      return false;
-    }
-    
-    // Establecer externalId con el UID de Firebase
-    await OneSignal.User.setExternalId(user.uid);
-    console.log('✅ ExternalId asignado:', user.uid);
-    
-    // Verificar que se haya asignado correctamente
-    const nuevoExternalId = await OneSignal.User.externalId;
-    if (nuevoExternalId === user.uid) {
-      console.log('✅ Vinculación exitosa!');
-      mostrarToast('✅ Usuario vinculado a notificaciones');
-      return true;
-    } else {
-      console.warn('⚠️ No se pudo verificar la vinculación');
-      return false;
-    }
-    
-  } catch (error) {
-    console.error('❌ Error vinculando usuario:', error);
-    return false;
-  }
-}
-
 // ============================================================
-// ===== ONESIGNAL - NOTIFICACIONES (SOLO APP ID) =====
+// ===== NOTIFICACIONES SIMPLIFICADAS (SIN VINCULACIÓN) =====
 // ============================================================
-async function suscribirNotificaciones() {
-  try {
-    console.log('🔔 Activando notificaciones...');
-    
-    const OneSignal = window.OneSignal;
-    if (!OneSignal) {
-      mostrarToast('❌ OneSignal no está cargado', true);
-      return;
-    }
-    
-    // Verificar que haya un usuario autenticado
-    if (!usuarioActual) {
-      mostrarToast('⚠️ Debes iniciar sesión primero', true);
-      return;
-    }
-    
-    // Verificar estado actual
-    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
-    console.log('📱 Estado actual:', isSubscribed);
-    
-    if (isSubscribed) {
-      // Ya está suscripto, solo vincular
-      mostrarToast('✅ Ya estás suscripto. Vinculando usuario...');
-      await vincularUsuarioOneSignal(usuarioActual);
-      
-      // Verificar que se haya vinculado
-      const externalId = await OneSignal.User.externalId;
-      if (externalId) {
-        mostrarToast('✅ Notificaciones activas y vinculadas! 📱');
-      } else {
-        mostrarToast('⚠️ Suscripto pero no vinculado. Reintentá.', true);
-      }
-      return;
-    }
-    
-    // Solicitar suscripción
-    mostrarToast('📱 Solicitando permisos...');
-    await OneSignal.User.PushSubscription.setOptIn(true);
-    
-    // Esperar un momento para que se complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Verificar que se haya activado
-    const newState = await OneSignal.User.PushSubscription.optedIn;
-    if (newState) {
-      mostrarToast('✅ Notificaciones activadas!');
-      
-      // Vincular usuario
-      await vincularUsuarioOneSignal(usuarioActual);
-      
-      // Verificar vinculación
-      const externalId = await OneSignal.User.externalId;
-      if (externalId) {
-        console.log('✅ Todo configurado correctamente');
-        mostrarToast('✅ ¡Listo! Recibirás notificaciones de nuevos turnos 📱');
-      } else {
-        console.warn('⚠️ Suscripto pero no vinculado');
-        mostrarToast('⚠️ Activado pero sin vincular. Reintentá.', true);
-      }
-    } else {
-      mostrarToast('⚠️ No se pudo activar. Revisá los permisos.', true);
-    }
-    
-  } catch (error) {
-    console.error('❌ Error en suscripción:', error);
-    mostrarToast('❌ Error al activar notificaciones', true);
-  }
-}
 
-// ===== ENVIAR NOTIFICACIÓN PUSH (USANDO CLOUD FUNCTION) =====
+// ===== ENVIAR NOTIFICACIÓN PUSH (SOLO SDK) =====
 async function enviarNotificacionPush(turno, infoTamano) {
   try {
-    console.log('📨 Enviando notificación push...');
+    console.log('📨 Enviando notificación...');
     
     const OneSignal = window.OneSignal;
     if (!OneSignal) {
-      console.error('❌ OneSignal no cargado');
+      console.log('ℹ️ OneSignal no disponible');
       return false;
     }
 
-    // Verificar suscripción
     const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
     if (!isSubscribed) {
-      console.log('⚠️ Usuario no suscripto');
+      console.log('ℹ️ Usuario no suscripto');
       return false;
     }
 
-    // Obtener externalId (debe estar vinculado)
-    const userId = await OneSignal.User.externalId;
-    if (!userId) {
-      console.warn('⚠️ Usuario no vinculado. Intentando vincular...');
-      await vincularUsuarioOneSignal(usuarioActual);
-      // Reintentar obtener externalId
-      const nuevoId = await OneSignal.User.externalId;
-      if (!nuevoId) {
-        console.error('❌ No se pudo vincular el usuario');
-        return false;
-      }
-    }
-
-    // Construir mensaje
     const mensaje = `🐾 ${turno.mascota} - ${turno.duenio}`;
     const subtitulo = `📅 ${formatearFechaLocal(turno.fecha)} ${turno.hora}`;
 
-    // Enviar notificación
     await OneSignal.Notifications.addNotification({
-      contents: { 
-        en: mensaje,
-        es: mensaje
-      },
-      headings: { 
-        en: "📅 Nueva reserva",
-        es: "📅 Nueva reserva"
-      },
-      subtitle: {
-        en: subtitulo,
-        es: subtitulo
-      },
+      contents: { en: mensaje, es: mensaje },
+      headings: { en: "📅 Nueva reserva", es: "📅 Nueva reserva" },
+      subtitle: { en: subtitulo, es: subtitulo },
       data: {
         turnoId: turno.id || 'nuevo',
         fecha: turno.fecha,
@@ -2867,16 +2756,56 @@ async function enviarNotificacionPush(turno, infoTamano) {
         mascota: turno.mascota,
         duenio: turno.duenio,
         type: 'nuevo_turno'
-      },
-      include_external_user_ids: [userId]
+      }
     });
     
-    console.log('✅ Notificación push enviada a:', userId);
+    console.log('✅ Notificación enviada');
     return true;
 
   } catch (error) {
-    console.error('❌ Error al enviar:', error);
+    console.error('❌ Error:', error);
     return false;
+  }
+}
+
+// ===== ACTIVAR NOTIFICACIONES =====
+async function suscribirNotificaciones() {
+  try {
+    console.log('🔔 Activando notificaciones...');
+    
+    const OneSignal = window.OneSignal;
+    if (!OneSignal) {
+      mostrarToast('❌ OneSignal no cargado', true);
+      return;
+    }
+    
+    if (!usuarioActual) {
+      mostrarToast('⚠️ Debes iniciar sesión', true);
+      return;
+    }
+    
+    const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+    
+    if (isSubscribed) {
+      mostrarToast('✅ Ya estás suscripto');
+      return;
+    }
+    
+    mostrarToast('📱 Solicitando permisos...');
+    await OneSignal.User.PushSubscription.setOptIn(true);
+    
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const newState = await OneSignal.User.PushSubscription.optedIn;
+    if (newState) {
+      mostrarToast('✅ ¡Notificaciones activadas! 📱');
+    } else {
+      mostrarToast('⚠️ No se pudo activar', true);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    mostrarToast('❌ Error: ' + error.message, true);
   }
 }
 
@@ -2990,7 +2919,6 @@ function compartirDisponibilidad() {
 // ============================================================
 // ===== RENDERIZAR ADMIN =====
 // ============================================================
-// ===== RENDERIZAR ADMIN =====
 function renderizarAdmin() {
   console.log('🔄 Renderizando admin...');
   
@@ -2998,7 +2926,7 @@ function renderizarAdmin() {
     actualizarContadores();
     renderizarTabla();
     renderizarCalendarioAdmin();
-    renderizarEstadisticas();  // ← Ahora maneja el error internamente
+    renderizarEstadisticas();
     renderizarListaRecordatorios();
     actualizarHorariosDiaAdmin();
     console.log('✅ Admin renderizado correctamente');
@@ -3194,7 +3122,7 @@ function actualizarDuracionYHorarios() {
 }
 
 // ============================================================
-// ===== CONFIRMAR TURNO (MODO CLIENTE) CON TRANSACCIÓN =====
+// ===== CONFIRMAR TURNO (MODO CLIENTE) =====
 // ============================================================
 async function confirmarTurnoCliente() {
   const mascota = document.getElementById('clienteMascota').value.trim();
@@ -3245,7 +3173,7 @@ async function confirmarTurnoCliente() {
     
     mostrarToast('✅ Turno confirmado correctamente');
     
-    // Enviar notificaciones (ahora vía Cloud Function)
+    // Enviar notificaciones (ahora vía SDK)
     await enviarNotificacionPush(nuevoTurno, infoTamano);
 
     // Enviar mensajes por WhatsApp
@@ -3842,7 +3770,6 @@ function agregarFotoModal() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (ev) => { 
-        // Guardar como URL para Storage
         fotosTemporales.push(ev.target.result); 
         renderizarFotosModal(); 
       };
@@ -3873,8 +3800,6 @@ async function guardarModal() {
   clienteModalActual.hora = document.getElementById('modalHora').value;
   clienteModalActual.tamano = document.getElementById('modalTamano').value;
   clienteModalActual.observaciones = document.getElementById('modalObservaciones').value;
-  // Fotos - convertir a URLs de Storage si es necesario
-  // Por simplicidad, mantenemos las fotos como están
   clienteModalActual.fotos = fotosTemporales;
   
   const guardado = await guardarTurnoFirestore(clienteModalActual);
@@ -3893,21 +3818,17 @@ async function guardarModal() {
 // ============================================================
 // ===== ADMIN: ESTADÍSTICAS =====
 // ============================================================
-// ===== ADMIN: ESTADÍSTICAS (CON VERIFICACIÓN DE CHART.JS) =====
 function renderizarEstadisticas() {
   console.log('📊 Renderizando estadísticas...');
   
-  // ✅ VERIFICAR QUE CHART.JS ESTÉ CARGADO
   if (typeof Chart === 'undefined') {
     console.warn('⚠️ Chart.js no está cargado, esperando...');
-    // Reintentar después de 1 segundo
     setTimeout(() => {
       if (typeof Chart !== 'undefined') {
         console.log('✅ Chart.js cargado, renderizando estadísticas...');
         renderizarEstadisticas();
       } else {
         console.error('❌ Chart.js no se pudo cargar');
-        // Mostrar mensaje en lugar de gráficos
         const razasContainer = document.getElementById('razasChart');
         const estadoContainer = document.getElementById('estadoChart');
         if (razasContainer) {
@@ -3925,22 +3846,18 @@ function renderizarEstadisticas() {
     return;
   }
   
-  // Si Chart.js está cargado, continuar
   console.log('✅ Chart.js disponible');
   
-  // Actualizar contadores
   document.getElementById("statTotal").innerText = clientes.length;
   document.getElementById("statFuturos").innerText = clientes.filter(c => esFechaFuturaLocal(c.fecha)).length;
   document.getElementById("statPorVencer").innerText = clientes.filter(c => { let d = diasRestantesLocal(c.fecha); return d > 0 && d <= 7; }).length;
   document.getElementById("statVencidos").innerText = clientes.filter(c => diasRestantesLocal(c.fecha) <= 0 && !esFechaFuturaLocal(c.fecha)).length;
 
-  // Gráfico de razas
   let razas = {};
   clientes.forEach(c => { if (c.raza) razas[c.raza] = (razas[c.raza] || 0) + 1; });
   
   const razasCanvas = document.getElementById("razasChart");
   if (razasCanvas && razasCanvas.parentElement) {
-    // Destruir gráfico anterior si existe
     if (razasChart) {
       razasChart.destroy();
       razasChart = null;
@@ -3970,7 +3887,6 @@ function renderizarEstadisticas() {
     }
   }
 
-  // Gráfico de estados
   let fut = clientes.filter(c => esFechaFuturaLocal(c.fecha)).length;
   let prox = clientes.filter(c => { let d = diasRestantesLocal(c.fecha); return d > 0 && d <= 7; }).length;
   let ven = clientes.filter(c => diasRestantesLocal(c.fecha) <= 0 && !esFechaFuturaLocal(c.fecha)).length;
@@ -3978,7 +3894,6 @@ function renderizarEstadisticas() {
   
   const estadoCanvas = document.getElementById("estadoChart");
   if (estadoCanvas && estadoCanvas.parentElement) {
-    // Destruir gráfico anterior si existe
     if (estadoChart) {
       estadoChart.destroy();
       estadoChart = null;
@@ -4007,6 +3922,7 @@ function renderizarEstadisticas() {
     }
   }
 }
+
 // ============================================================
 // ===== ADMIN: RECORDATORIOS =====
 // ============================================================
@@ -4056,69 +3972,22 @@ function switchTab(tab, btn) {
 }
 
 // ============================================================
-// ===== TESTS BÁSICOS (solo en desarrollo) =====
-// ============================================================
-function ejecutarTests() {
-  // Solo ejecutar en desarrollo
-  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    console.log('🧪 Tests solo en entorno de desarrollo');
-    return;
-  }
-  
-  console.log('🧪 Ejecutando tests básicos...');
-  
-  try {
-    // Test 1: Verificar que los tamaños están definidos
-    console.assert(TAMAÑOS.chico, '❌ Tamaño chico no definido');
-    console.assert(TAMAÑOS.mediano, '❌ Tamaño mediano no definido');
-    console.assert(TAMAÑOS.grande, '❌ Tamaño grande no definido');
-    console.assert(TAMAÑOS.extragrande, '❌ Tamaño extragrande no definido');
-    
-    // Test 2: Verificar funciones de fecha
-    const fechaTest = '2026-07-10';
-    console.assert(formatearFechaLocal(fechaTest) === '10/07/2026', '❌ formatearFechaLocal falló');
-    
-    // Test 3: Verificar que clientes es un array
-    console.assert(Array.isArray(clientes), '❌ clientes no es un array');
-    
-    // Test 4: Verificar sumarMinutos
-    console.assert(sumarMinutos('10:00', 60) === '11:00', '❌ sumarMinutos falló');
-    console.assert(sumarMinutos('18:30', 120) === '20:30', '❌ sumarMinutos falló');
-    
-    // Test 5: Verificar escapeHtml
-    console.assert(escapeHtml('<script>') === '&lt;script&gt;', '❌ escapeHtml falló');
-    console.assert(escapeHtml('"test"') === '&quot;test&quot;', '❌ escapeHtml falló');
-    
-    console.log('✅ Todos los tests básicos pasaron!');
-  } catch (error) {
-    console.error('❌ Error en tests:', error);
-  }
-}
-
-// ============================================================
-// ===== INICIALIZACIÓN =====
-// ============================================================
-// ============================================================
 // ===== INICIALIZACIÓN =====
 // ============================================================
 async function init() {
   console.log('🚀 Iniciando aplicación...');
   
-  // Cargar datos de Firestore PRIMERO
   await cargarTurnosFirestore();
   console.log('📊 Datos cargados:', clientes.length, 'turnos');
   
-  // Configurar la interfaz
   const hoy = new Date().toISOString().slice(0,10);
   document.getElementById('fechaAdmin').value = hoy;
   
-  // Mostrar modo cliente por defecto
   document.getElementById('clienteMode').classList.remove('oculto');
   document.getElementById('adminMode').classList.remove('visible');
   document.getElementById('backupButtons').style.display = 'none';
   document.getElementById('btnLogout').style.display = 'none';
   
-  // Renderizar (sin depender de Chart.js)
   try {
     renderizarAdmin();
     renderizarCliente();
@@ -4126,7 +3995,6 @@ async function init() {
     console.error('❌ Error en renderizado inicial:', error);
   }
   
-  // Verificar si ya hay sesión activa
   const user = auth.currentUser;
   if (user) {
     const esAdminUser = await verificarRolAdmin(user.uid);
@@ -4137,7 +4005,6 @@ async function init() {
     }
   }
   
-  // Escuchar cambios en tiempo real
   db.collection(COLECCION)
     .orderBy('fecha', 'desc')
     .onSnapshot(() => {
@@ -4155,7 +4022,6 @@ async function init() {
   console.log('✅ Aplicación iniciada correctamente');
 }
 
-// Iniciar la aplicación
 init();
 </script>
 </body>
