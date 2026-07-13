@@ -3099,15 +3099,43 @@ Por favor, confirmá que recibiste esta información. ¡Gracias! 🐾`;
 function buscarCliente() { paginaActual = 1; renderizarTabla(); }
 function limpiarBusqueda() { document.getElementById("buscarCliente").value = ""; paginaActual = 1; renderizarTabla(); }
 
-async function eliminarCliente(id) { 
-  mostrarConfirmacion('¿Eliminar este turno?', async () => {
-    const eliminado = await eliminarTurnoFirestore(id);
-    if (eliminado) {
-      clientes = clientes.filter(c=>c.id!==id); 
-      mostrarToast("✅ Turno eliminado"); 
-      renderizarAdmin();
+// ===== ELIMINAR CLIENTE - VERSIÓN DEFINITIVA =====
+async function eliminarCliente(id) {
+  console.log('🗑️ Eliminar cliente llamado con ID:', id);
+  
+  if (!id) {
+    mostrarToast('❌ Error: ID no válido', true);
+    return;
+  }
+  
+  // Usar confirm nativo del navegador (SIEMPRE funciona)
+  if (!confirm('¿Eliminar este turno permanentemente?')) {
+    console.log('❌ Cancelado por usuario');
+    return;
+  }
+  
+  console.log('✅ Confirmado - Eliminando...');
+  mostrarToast('🔄 Eliminando turno...');
+  
+  try {
+    // Eliminar de Firestore
+    await db.collection(COLECCION).doc(id).delete();
+    console.log('✅ Eliminado de Firestore');
+    
+    // Eliminar del array local
+    const index = clientes.findIndex(c => c.id === id);
+    if (index !== -1) {
+      clientes.splice(index, 1);
     }
-  });
+    
+    // Actualizar la tabla
+    renderizarAdmin();
+    mostrarToast('✅ Turno eliminado correctamente');
+    
+  } catch (error) {
+    console.error('❌ Error al eliminar:', error);
+    mostrarToast('❌ Error al eliminar: ' + error.message, true);
+  }
 }
 
 // ============================================================
