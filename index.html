@@ -3100,42 +3100,44 @@ function buscarCliente() { paginaActual = 1; renderizarTabla(); }
 function limpiarBusqueda() { document.getElementById("buscarCliente").value = ""; paginaActual = 1; renderizarTabla(); }
 
 // ===== ELIMINAR CLIENTE - VERSIÓN CORREGIDA =====
+a// ===== ELIMINAR CLIENTE - VERSIÓN DEFINITIVA =====
 async function eliminarCliente(id) {
   console.log('🗑️ Eliminar cliente llamado con ID:', id);
   
   if (!id) {
-    console.error('❌ ID no válido');
     mostrarToast('❌ Error: ID no válido', true);
     return;
   }
   
-  // Usar confirm nativo (siempre funciona)
+  // Usar confirm nativo del navegador (SIEMPRE funciona)
   if (!confirm('¿Eliminar este turno permanentemente?')) {
     console.log('❌ Cancelado por usuario');
     return;
   }
   
   console.log('✅ Confirmado - Eliminando...');
+  mostrarToast('🔄 Eliminando turno...');
   
   try {
-    const eliminado = await eliminarTurnoFirestore(id);
-    console.log('📊 Resultado de eliminación:', eliminado);
+    // Eliminar de Firestore
+    await db.collection(COLECCION).doc(id).delete();
+    console.log('✅ Eliminado de Firestore');
     
-    if (eliminado) {
-      clientes = clientes.filter(c => c.id !== id);
-      console.log('✅ Turno eliminado - Total turnos:', clientes.length);
-      mostrarToast("✅ Turno eliminado correctamente");
-      renderizarAdmin();
-    } else {
-      console.warn('⚠️ No se pudo eliminar');
-      mostrarToast('⚠️ No se pudo eliminar el turno', true);
+    // Eliminar del array local
+    const index = clientes.findIndex(c => c.id === id);
+    if (index !== -1) {
+      clientes.splice(index, 1);
     }
+    
+    // Actualizar la tabla
+    renderizarAdmin();
+    mostrarToast('✅ Turno eliminado correctamente');
+    
   } catch (error) {
-    console.error('❌ Error en eliminación:', error);
+    console.error('❌ Error al eliminar:', error);
     mostrarToast('❌ Error al eliminar: ' + error.message, true);
   }
 }
-
 // ============================================================
 // ===== ADMIN: MODAL =====
 // ============================================================
