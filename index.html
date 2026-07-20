@@ -28,7 +28,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 
-<!-- ===== ONESIGNAL (SOLO APP ID, NO LA KEY) ===== -->
+<!-- ===== ONESIGNAL ===== -->
 <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
   window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -63,6 +63,8 @@
     --marron: #8B6B4A;
     --azul: #2196F3;
     --rojo: #c0392b;
+    --naranja-suspension: #FF9800;
+    --naranja-suspension-oscuro: #E65100;
   }
 
   .hero { 
@@ -116,6 +118,10 @@
   .btn-backup.logout:hover { background: #e74c3c; }
   .btn-backup.pdf { background: #d32f2f; }
   .btn-backup.pdf:hover { background: #f44336; }
+  .btn-backup.suspension { background: var(--naranja-suspension); }
+  .btn-backup.suspension:hover { background: var(--naranja-suspension-oscuro); }
+  .btn-backup.suspension.activa { background: #4CAF50; }
+  .btn-backup.suspension.activa:hover { background: var(--verde-oscuro); }
   
   .badge-counter { 
     background: var(--naranja-muy-claro); 
@@ -180,6 +186,16 @@
     display: flex; 
     align-items: center; 
     gap: 10px; 
+  }
+  .cliente-card.suspendido {
+    text-align: center;
+    padding: 40px;
+    border-left-color: var(--naranja-suspension);
+  }
+  .cliente-card.suspendido .icono-suspension {
+    font-size: 64px;
+    color: var(--naranja-suspension);
+    margin-bottom: 20px;
   }
 
   .horarios-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin: 15px 0; }
@@ -648,6 +664,7 @@
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
   }
   .toast-msg.error { background: var(--rojo); }
+  .toast-msg.suspension { background: var(--naranja-suspension-oscuro); }
   @keyframes fadeInOut { 
     0%{opacity:0; transform:translateY(20px);} 
     15%{opacity:1; transform:translateY(0);} 
@@ -711,6 +728,22 @@
     background: linear-gradient(95deg, #F9A825, #F57F17);
   }
 
+  /* ===== MODAL SUSPENSIÓN ===== */
+  .modal-suspension .modal-container {
+    max-width: 500px;
+    border-color: var(--naranja-suspension);
+  }
+  .modal-suspension .modal-header {
+    background: linear-gradient(95deg, var(--naranja-suspension), var(--naranja-suspension-oscuro));
+  }
+  .modal-suspension-cliente .modal-container {
+    max-width: 450px;
+    border-color: var(--naranja-suspension);
+  }
+  .modal-suspension-cliente .modal-header {
+    background: linear-gradient(95deg, var(--naranja-suspension), var(--naranja-suspension-oscuro));
+  }
+
   .badge-tamano {
     display: inline-block;
     padding: 2px 10px;
@@ -725,6 +758,7 @@
   .badge-rol-admin { background: #2196F3; color: white; }
   .badge-rol-peluquero { background: #FF9800; color: white; }
   .badge-rol-usuario { background: #9E9E9E; color: white; }
+  .badge-suspension { background: var(--naranja-suspension); color: white; }
 
   .horarios-dia-admin {
     display: flex;
@@ -953,6 +987,27 @@
   .confirm-modal .modal-container { max-width: 400px; }
   .confirm-modal .modal-header { background: var(--naranja-oscuro); }
 
+  /* ===== BOTONERA ADMIN ===== */
+  .admin-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+  }
+  .admin-actions .action-box {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 10px 15px;
+    border-radius: 16px;
+    flex: 1;
+    min-width: 200px;
+  }
+  .action-box-notificaciones { background: #f0f8ff; border: 2px solid #25D366; }
+  .action-box-disponibilidad { background: #FFF8E1; border: 2px solid #F9A825; }
+  .action-box-suspension { background: #FFF3E0; border: 2px solid var(--naranja-suspension); }
+
   @media (max-width: 768px) {
     body { padding: 10px; }
     .dashboard { padding: 0; }
@@ -1036,6 +1091,8 @@
     .btn-toggle i { font-size: 0.9rem; }
     .pagination button { padding: 4px 10px; font-size: 0.7rem; min-width: 30px; }
     .pagination .info { font-size: 0.7rem; }
+    .admin-actions .action-box { min-width: 100%; padding: 8px 12px; }
+    .admin-actions .action-box span { font-size: 0.6rem; }
   }
 
   @media (max-width: 420px) {
@@ -1147,6 +1204,104 @@
   </div>
 </div>
 
+<!-- ===== MODAL DE SUSPENSIÓN (CONFIGURACIÓN ADMIN) ===== -->
+<div class="modal-overlay modal-suspension" id="modalConfigSuspension" style="display:none; z-index: 5000;">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3><i class="fas fa-edit"></i> Configurar suspensión de turnos</h3>
+      <button class="modal-close" onclick="cerrarModalConfigSuspension()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom: 20px;">
+        <label style="font-weight: 600; color: var(--marron); display: block; margin-bottom: 8px;">
+          <i class="fas fa-pencil-alt"></i> Mensaje personalizado:
+        </label>
+        <textarea id="inputMensajeSuspension" rows="4" style="width:100%; padding:12px 16px; border:2px solid var(--naranja-claro); border-radius:16px; font-size:1rem; resize:vertical; background:#fefcf9;" placeholder="Ej: Estamos de vacaciones. Volvemos el 1 de agosto 🏖️"></textarea>
+        <div style="font-size:0.8rem; color:#999; margin-top:5px;">
+          💡 Podés usar emojis y texto personalizado. Se mostrará a los clientes.
+        </div>
+      </div>
+      <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <button onclick="activarSuspension()" style="flex:1; background: var(--naranja-suspension); border: none; padding: 12px; border-radius: 40px; color: white; font-weight: 700; cursor: pointer;">
+          <i class="fas fa-pause-circle"></i> Suspender turnos
+        </button>
+        <button onclick="desactivarSuspension()" style="flex:1; background: #4CAF50; border: none; padding: 12px; border-radius: 40px; color: white; font-weight: 700; cursor: pointer;">
+          <i class="fas fa-play-circle"></i> Activar turnos
+        </button>
+      </div>
+      <div style="margin-top: 15px; text-align: center; font-size:0.9rem; color:var(--marron); padding: 8px; background: var(--beige); border-radius: 12px;">
+        Estado actual: <span id="estadoSuspensionTexto" style="font-weight: 700;">Cargando...</span>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content: center;">
+      <button class="modal-btn modal-btn-cerrar" onclick="cerrarModalConfigSuspension()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL DE SUSPENSIÓN (CLIENTES) ===== -->
+<div class="modal-overlay modal-suspension-cliente" id="modalSuspension" style="display:none; z-index: 4000;">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3><i class="fas fa-clock"></i> Turnos suspendidos</h3>
+      <button class="modal-close" onclick="cerrarSuspension()">&times;</button>
+    </div>
+    <div class="modal-body" style="text-align: center; padding: 30px;">
+      <i class="fas fa-pause-circle" style="font-size: 64px; color: var(--naranja-suspension); margin-bottom: 20px;"></i>
+      <div id="mensajeSuspensionCliente" style="color: var(--marron); line-height: 1.8; font-size: 1.1rem; white-space: pre-wrap;">
+        Estamos de vacaciones. Volveremos pronto. 🏖️
+      </div>
+      <div style="margin-top: 20px; font-size: 0.9rem; color: #888;">
+        <i class="fas fa-envelope"></i> Consultas: <a href="mailto:familiaanimal@gmail.com" style="color: var(--naranja-medio);">familiaanimal@gmail.com</a>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content: center;">
+      <button class="modal-btn modal-btn-cerrar" onclick="cerrarSuspension()">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== RECORDATORIO ===== -->
+<div class="recordatorio-modal" id="modalRecordatorio">
+  <div class="recordatorio-box">
+    <i class="fas fa-info-circle" style="font-size: 48px; color: var(--naranja-oscuro); margin-bottom: 15px;"></i>
+    <h3>⚠️ Importante</h3>
+    <p>
+      Recordá respetar el turno agendado.<br><br>
+      Si no podés asistir, por favor avisanos con anticipación para poder reasignar el horario.<br><br>
+      ¡Gracias por confiar en nosotros! 🐾
+    </p>
+    <button class="btn-recordatorio" id="btnContinuarRecordatorio">Entendido, continuar</button>
+  </div>
+</div>
+
+<!-- ===== MODAL DE DISPONIBILIDAD ===== -->
+<div class="modal-overlay modal-disponibilidad" id="modalDisponibilidad" style="display:none;">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3><i class="fas fa-calendar-alt"></i> Disponibilidad de turnos</h3>
+      <button class="modal-close" onclick="cerrarDisponibilidad()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom: 15px;">
+        <label style="font-weight:600; font-size:0.9rem;">📅 <span id="disponibilidadSemana"></span></label>
+      </div>
+      <div id="disponibilidadContenido" style="background: #f5f5f5; padding: 15px; border-radius: 12px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; font-size: 0.9rem; line-height: 1.6;">
+        Cargando...
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content: center;">
+      <button class="modal-btn" onclick="copiarDisponibilidad()" style="background: #2196f3; color: white;">
+        <i class="fas fa-copy"></i> Copiar mensaje
+      </button>
+      <button class="modal-btn modal-btn-wsp" onclick="compartirDisponibilidad()">
+        <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
+      </button>
+      <button class="modal-btn modal-btn-cerrar" onclick="cerrarDisponibilidad()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============================================================ -->
 <!-- ===== DASHBOARD PRINCIPAL ===== -->
 <!-- ============================================================ -->
@@ -1166,6 +1321,9 @@
         <button class="btn-backup pdf" onclick="generarReportePDF()"><i class="fas fa-file-pdf"></i> <span class="btn-texto">PDF</span></button>
         <button class="btn-backup logout" id="btnLogout" onclick="cerrarSesion()" style="display:none;">
           <i class="fas fa-sign-out-alt"></i> <span class="btn-texto">Salir</span>
+        </button>
+        <button class="btn-backup suspension" id="btnSuspensionHeader" onclick="abrirModalSuspension()" style="display:none;">
+          <i class="fas fa-pause-circle"></i> <span class="btn-texto" id="btnSuspensionHeaderTexto">Suspender</span>
         </button>
       </div>
       <span class="badge-counter" id="statusCloud"><i class="fas fa-cloud"></i> <span id="totalClientes">0</span> turnos</span>
@@ -1199,20 +1357,26 @@
       <button class="tab-btn" onclick="switchTab('usuarios', this)"><i class="fas fa-user-shield"></i> <span class="btn-texto">Usuarios</span></button>
     </div>
 
-    <!-- ===== BOTÓN PARA ACTIVAR NOTIFICACIONES ===== -->
-    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; background: #f0f8ff; padding: 10px 15px; border-radius: 16px; border: 2px solid #25D366;">
-      <button class="btn-toggle" onclick="suscribirNotificaciones()" style="background: #25D366; padding: 8px 20px; font-size:0.8rem; border: none; border-radius: 40px; color: white; font-weight: 600; cursor: pointer;">
-        <i class="fas fa-bell"></i> <span class="btn-texto">Activar notificaciones</span>
-      </button>
-      <span style="font-size:0.7rem; color:var(--marron);">📱 Recibí alertas cuando se registre un turno</span>
-    </div>
-
-    <!-- ===== BOTÓN PARA GENERAR DISPONIBILIDAD ===== -->
-    <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; background: #FFF8E1; padding: 10px 15px; border-radius: 16px; border: 2px solid #F9A825;">
-      <button class="btn-toggle" onclick="generarDisponibilidad()" style="background: #F9A825; padding: 8px 20px; font-size:0.8rem; border: none; border-radius: 40px; color: white; font-weight: 600; cursor: pointer;">
-        <i class="fas fa-calendar-alt"></i> <span class="btn-texto">Generar disponibilidad</span>
-      </button>
-      <span style="font-size:0.7rem; color:var(--marron);">📋 Genera un mensaje con los horarios disponibles para compartir con clientes</span>
+    <!-- ===== BOTONERA ADMIN ===== -->
+    <div class="admin-actions">
+      <div class="action-box action-box-notificaciones">
+        <button class="btn-toggle" onclick="suscribirNotificaciones()" style="background: #25D366; padding: 8px 16px; font-size:0.7rem; border: none; border-radius: 40px; color: white; font-weight: 600; cursor: pointer;">
+          <i class="fas fa-bell"></i> <span class="btn-texto">Notificaciones</span>
+        </button>
+        <span style="font-size:0.65rem; color:var(--marron);">📱 Alertas de turnos</span>
+      </div>
+      <div class="action-box action-box-disponibilidad">
+        <button class="btn-toggle" onclick="generarDisponibilidad()" style="background: #F9A825; padding: 8px 16px; font-size:0.7rem; border: none; border-radius: 40px; color: white; font-weight: 600; cursor: pointer;">
+          <i class="fas fa-calendar-alt"></i> <span class="btn-texto">Disponibilidad</span>
+        </button>
+        <span style="font-size:0.65rem; color:var(--marron);">📋 Compartir horarios</span>
+      </div>
+      <div class="action-box action-box-suspension">
+        <button class="btn-toggle" onclick="abrirModalSuspension()" id="btnSuspensionAction" style="background: var(--naranja-suspension); padding: 8px 16px; font-size:0.7rem; border: none; border-radius: 40px; color: white; font-weight: 600; cursor: pointer;">
+          <i class="fas fa-pause-circle"></i> <span id="btnSuspensionActionTexto">Suspender</span>
+        </button>
+        <span style="font-size:0.65rem; color:var(--marron);" id="estadoSuspensionBadge">🟢 Activo</span>
+      </div>
     </div>
 
     <!-- ===== PANEL CLIENTES ===== -->
@@ -1334,47 +1498,6 @@
   </div>
 </div>
 
-<!-- ===== MODAL DE RECORDATORIO ===== -->
-<div class="recordatorio-modal" id="modalRecordatorio">
-  <div class="recordatorio-box">
-    <i class="fas fa-info-circle" style="font-size: 48px; color: var(--naranja-oscuro); margin-bottom: 15px;"></i>
-    <h3>⚠️ Importante</h3>
-    <p>
-      Recordá respetar el turno agendado.<br><br>
-      Si no podés asistir, por favor avisanos con anticipación para poder reasignar el horario.<br><br>
-      ¡Gracias por confiar en nosotros! 🐾
-    </p>
-    <button class="btn-recordatorio" id="btnContinuarRecordatorio">Entendido, continuar</button>
-  </div>
-</div>
-
-<!-- ===== MODAL DE DISPONIBILIDAD ===== -->
-<div class="modal-overlay modal-disponibilidad" id="modalDisponibilidad" style="display:none;">
-  <div class="modal-container">
-    <div class="modal-header">
-      <h3><i class="fas fa-calendar-alt"></i> Disponibilidad de turnos</h3>
-      <button class="modal-close" onclick="cerrarDisponibilidad()">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div style="margin-bottom: 15px;">
-        <label style="font-weight:600; font-size:0.9rem;">📅 <span id="disponibilidadSemana"></span></label>
-      </div>
-      <div id="disponibilidadContenido" style="background: #f5f5f5; padding: 15px; border-radius: 12px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; font-size: 0.9rem; line-height: 1.6;">
-        Cargando...
-      </div>
-    </div>
-    <div class="modal-footer" style="justify-content: center;">
-      <button class="modal-btn" onclick="copiarDisponibilidad()" style="background: #2196f3; color: white;">
-        <i class="fas fa-copy"></i> Copiar mensaje
-      </button>
-      <button class="modal-btn modal-btn-wsp" onclick="compartirDisponibilidad()">
-        <i class="fab fa-whatsapp"></i> Enviar por WhatsApp
-      </button>
-      <button class="modal-btn modal-btn-cerrar" onclick="cerrarDisponibilidad()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
 <!-- ============================================================ -->
 <!-- ===== JAVASCRIPT ===== -->
 <!-- ============================================================ -->
@@ -1428,6 +1551,10 @@ let paginaActual = 1;
 let totalPaginas = 1;
 let usuariosRegistrados = [];
 let confirmCallback = null;
+
+// ===== SUSPENSIÓN =====
+let suspensionActiva = false;
+let mensajeSuspensionPersonalizado = 'Estamos de vacaciones. Volveremos pronto. 🏖️';
 
 // ============================================================
 // ===== FUNCIONES DE SEGURIDAD =====
@@ -1518,6 +1645,7 @@ auth.onAuthStateChanged(async (user) => {
     if (esAdmin) {
       ocultarLogin();
       document.getElementById('btnLogout').style.display = 'inline-flex';
+      document.getElementById('btnSuspensionHeader').style.display = 'inline-flex';
       mostrarToast('✅ Bienvenido ' + (user.displayName || 'Administrador'));
       
       modoActual = 'admin';
@@ -1538,12 +1666,14 @@ auth.onAuthStateChanged(async (user) => {
       document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user-cog"></i> <span class="btn-texto">Modo Admin</span>';
       document.getElementById('backupButtons').style.display = 'none';
       document.getElementById('btnLogout').style.display = 'none';
+      document.getElementById('btnSuspensionHeader').style.display = 'none';
       ocultarLogin();
     }
   } else {
     usuarioActual = null;
     esAdmin = false;
     document.getElementById('btnLogout').style.display = 'none';
+    document.getElementById('btnSuspensionHeader').style.display = 'none';
     ocultarLogin();
     
     if (modoActual === 'admin') {
@@ -1755,6 +1885,7 @@ async function mostrarAdmin() {
   document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user"></i> <span class="btn-texto">Modo Cliente</span>';
   document.getElementById('backupButtons').style.display = 'flex';
   document.getElementById('btnLogout').style.display = 'inline-flex';
+  document.getElementById('btnSuspensionHeader').style.display = 'inline-flex';
   ocultarLogin();
   renderizarAdmin();
   cargarUsuarios();
@@ -1772,6 +1903,7 @@ async function cerrarSesion() {
     document.getElementById('btnToggleModo').innerHTML = '<i class="fas fa-user-cog"></i> <span class="btn-texto">Modo Admin</span>';
     document.getElementById('backupButtons').style.display = 'none';
     document.getElementById('btnLogout').style.display = 'none';
+    document.getElementById('btnSuspensionHeader').style.display = 'none';
     ocultarLogin();
     renderizarCliente();
   } catch (error) {
@@ -1779,6 +1911,144 @@ async function cerrarSesion() {
     mostrarToast('❌ Error al cerrar sesión', true);
   }
 }
+
+// ============================================================
+// ===== SUSPENSIÓN DE TURNOS =====
+// ============================================================
+
+async function cargarEstadoSuspension() {
+  try {
+    const doc = await db.collection('config').doc('suspension').get();
+    if (doc.exists) {
+      const data = doc.data();
+      suspensionActiva = data.activa || false;
+      mensajeSuspensionPersonalizado = data.mensaje || 'Estamos de vacaciones. Volveremos pronto. 🏖️';
+      actualizarUISuspension();
+    } else {
+      await db.collection('config').doc('suspension').set({
+        activa: false,
+        mensaje: 'Estamos de vacaciones. Volveremos pronto. 🏖️'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error cargando estado de suspensión:', error);
+  }
+}
+
+function actualizarUISuspension() {
+  const estadoBadge = document.getElementById('estadoSuspensionBadge');
+  const btnTexto = document.getElementById('btnSuspensionActionTexto');
+  const btnHeader = document.getElementById('btnSuspensionHeader');
+  const btnHeaderTexto = document.getElementById('btnSuspensionHeaderTexto');
+  const estadoTexto = document.getElementById('estadoSuspensionTexto');
+  
+  if (suspensionActiva) {
+    if (estadoBadge) {
+      estadoBadge.innerHTML = '🔴 SUSPENDIDO';
+      estadoBadge.style.color = '#E65100';
+    }
+    if (btnTexto) btnTexto.textContent = 'Activar';
+    if (btnHeaderTexto) btnHeaderTexto.textContent = 'Activar';
+    if (btnHeader) {
+      btnHeader.classList.add('activa');
+      btnHeader.style.background = '#4CAF50';
+    }
+    if (estadoTexto) estadoTexto.textContent = '🔴 SUSPENDIDO';
+  } else {
+    if (estadoBadge) {
+      estadoBadge.innerHTML = '🟢 Activo';
+      estadoBadge.style.color = '#2D7D4A';
+    }
+    if (btnTexto) btnTexto.textContent = 'Suspender';
+    if (btnHeaderTexto) btnHeaderTexto.textContent = 'Suspender';
+    if (btnHeader) {
+      btnHeader.classList.remove('activa');
+      btnHeader.style.background = 'var(--naranja-suspension)';
+    }
+    if (estadoTexto) estadoTexto.textContent = '🟢 HABILITADO';
+  }
+}
+
+function abrirModalSuspension() {
+  const modal = document.getElementById('modalConfigSuspension');
+  const textarea = document.getElementById('inputMensajeSuspension');
+  textarea.value = mensajeSuspensionPersonalizado || '';
+  modal.style.display = 'flex';
+}
+
+function cerrarModalConfigSuspension() {
+  document.getElementById('modalConfigSuspension').style.display = 'none';
+}
+
+async function activarSuspension() {
+  const mensaje = document.getElementById('inputMensajeSuspension').value.trim();
+  if (!mensaje) {
+    mostrarToast('⚠️ Escribí un mensaje personalizado', true);
+    return;
+  }
+  
+  try {
+    await db.collection('config').doc('suspension').set({
+      activa: true,
+      mensaje: mensaje,
+      actualizado: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    suspensionActiva = true;
+    mensajeSuspensionPersonalizado = mensaje;
+    actualizarUISuspension();
+    cerrarModalConfigSuspension();
+    mostrarToast('🔴 Turnos suspendidos', false, 'suspension');
+    mostrarSuspension();
+    renderizarCliente();
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    mostrarToast('❌ Error al suspender', true);
+  }
+}
+
+async function desactivarSuspension() {
+  try {
+    await db.collection('config').doc('suspension').set({
+      activa: false,
+      mensaje: mensajeSuspensionPersonalizado || 'Estamos de vacaciones. Volveremos pronto. 🏖️',
+      actualizado: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    suspensionActiva = false;
+    actualizarUISuspension();
+    cerrarModalConfigSuspension();
+    mostrarToast('🟢 Turnos activados');
+    renderizarCliente();
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    mostrarToast('❌ Error al activar', true);
+  }
+}
+
+function mostrarSuspension() {
+  const modal = document.getElementById('modalSuspension');
+  const mensajeEl = document.getElementById('mensajeSuspensionCliente');
+  mensajeEl.textContent = mensajeSuspensionPersonalizado || 'Estamos de vacaciones. Volveremos pronto. 🏖️';
+  modal.style.display = 'flex';
+}
+
+function cerrarSuspension() {
+  document.getElementById('modalSuspension').style.display = 'none';
+}
+
+document.addEventListener('click', function(event) {
+  const modalSuspension = document.getElementById('modalSuspension');
+  if (event.target === modalSuspension) {
+    cerrarSuspension();
+  }
+  const modalConfig = document.getElementById('modalConfigSuspension');
+  if (event.target === modalConfig) {
+    cerrarModalConfigSuspension();
+  }
+});
 
 // ============================================================
 // ===== TAMAÑOS Y DURACIONES =====
@@ -2278,7 +2548,6 @@ async function suscribirNotificaciones() {
 async function enviarNotificacionPush(turno, infoTamano) {
   try {
     console.log('📨 Notificación push para:', turno.mascota);
-    // La notificación se envía automáticamente desde Firestore
     return null;
   } catch (error) {
     console.error('❌ Error:', error);
@@ -2394,7 +2663,7 @@ function compartirDisponibilidad() {
 }
 
 // ============================================================
-// ===== RENDERIZAR ADMIN =====
+// ===== RENDERIZAR =====
 // ============================================================
 function renderizarAdmin() {
   actualizarContadores();
@@ -2405,12 +2674,25 @@ function renderizarAdmin() {
   actualizarHorariosDiaAdmin();
 }
 
-// ============================================================
-// ===== RENDERIZAR CLIENTE =====
-// ============================================================
 function renderizarCliente() {
     const container = document.getElementById('clienteContent');
     if (!container) return;
+
+    if (suspensionActiva) {
+      container.innerHTML = `
+        <div class="cliente-card suspendido">
+          <div class="icono-suspension"><i class="fas fa-pause-circle"></i></div>
+          <h2 style="color: var(--naranja-oscuro);">⏳ Turnos suspendidos</h2>
+          <p style="color: var(--marron); font-size: 1.1rem; margin: 15px 0; white-space: pre-wrap;">
+            ${mensajeSuspensionPersonalizado || 'Estamos de vacaciones. Volveremos pronto. 🏖️'}
+          </p>
+          <div style="font-size: 0.9rem; color: #888;">
+            <i class="fas fa-envelope"></i> Consultas: <a href="mailto:familiaanimal@gmail.com" style="color: var(--naranja-medio);">familiaanimal@gmail.com</a>
+          </div>
+        </div>
+      `;
+      return;
+    }
 
     let carteleraHTML = `
         <div class="cliente-card cartelera">
@@ -2594,6 +2876,12 @@ function actualizarDuracionYHorarios() {
 // ===== CONFIRMAR TURNO (MODO CLIENTE) =====
 // ============================================================
 async function confirmarTurnoCliente() {
+  // 👇 VERIFICAR SUSPENSIÓN
+  if (suspensionActiva) {
+    mostrarSuspension();
+    return;
+  }
+  
   const mascota = document.getElementById('clienteMascota').value.trim();
   const duenio = document.getElementById('clienteDuenio').value.trim();
   const telefono = document.getElementById('clienteTelefono').value.trim();
@@ -2671,17 +2959,13 @@ async function confirmarTurnoCliente() {
   const telefonoLimpio = TU_NUMERO.replace(/[^0-9+]/g, '');
   const urlWhatsAppDueño = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(mensajeParaDueno)}`;
 
-  // MOSTRAR MODAL DE RECORDATORIO Y SOLO AQUÍ ABRIR WHATSAPP
+  PELUQUEROS.forEach(num => {
+    const numLimpio = num.replace(/[^0-9+]/g, '');
+    window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensajePeluqueros)}`, '_blank');
+  });
+
   mostrarModalRecordatorio(() => {
-    // Abrir WhatsApp del dueño SOLO DESPUÉS del recordatorio
     window.open(urlWhatsAppDueño, '_blank');
-    
-    // Abrir WhatsApp de los peluqueros
-    PELUQUEROS.forEach(num => {
-      const numLimpio = num.replace(/[^0-9+]/g, '');
-      window.open(`https://wa.me/${numLimpio}?text=${encodeURIComponent(mensajePeluqueros)}`, '_blank');
-    });
-    
     clienteSeleccionado = { fecha: null, hora: null };
     renderizarCliente();
     renderizarAdmin();
@@ -3099,7 +3383,6 @@ Por favor, confirmá que recibiste esta información. ¡Gracias! 🐾`;
 function buscarCliente() { paginaActual = 1; renderizarTabla(); }
 function limpiarBusqueda() { document.getElementById("buscarCliente").value = ""; paginaActual = 1; renderizarTabla(); }
 
-// ===== ELIMINAR CLIENTE - VERSIÓN DEFINITIVA =====
 async function eliminarCliente(id) {
   console.log('🗑️ Eliminar cliente llamado con ID:', id);
   
@@ -3108,7 +3391,6 @@ async function eliminarCliente(id) {
     return;
   }
   
-  // Usar confirm nativo del navegador (SIEMPRE funciona)
   if (!confirm('¿Eliminar este turno permanentemente?')) {
     console.log('❌ Cancelado por usuario');
     return;
@@ -3118,17 +3400,14 @@ async function eliminarCliente(id) {
   mostrarToast('🔄 Eliminando turno...');
   
   try {
-    // Eliminar de Firestore
     await db.collection(COLECCION).doc(id).delete();
     console.log('✅ Eliminado de Firestore');
     
-    // Eliminar del array local
     const index = clientes.findIndex(c => c.id === id);
     if (index !== -1) {
       clientes.splice(index, 1);
     }
     
-    // Actualizar la tabla
     renderizarAdmin();
     mostrarToast('✅ Turno eliminado correctamente');
     
@@ -3349,12 +3628,12 @@ function actualizarContadores() {
   document.getElementById("totalClientes").innerText = clientes.length; 
 }
 
-function mostrarToast(msg, error = false) { 
+function mostrarToast(msg, error = false, tipo = '') { 
   let t = document.createElement('div'); 
-  t.className = 'toast-msg' + (error ? ' error' : ''); 
+  t.className = 'toast-msg' + (error ? ' error' : '') + (tipo === 'suspension' ? ' suspension' : ''); 
   t.innerText = msg; 
   document.body.appendChild(t); 
-  setTimeout(() => t.remove(), 2500); 
+  setTimeout(() => t.remove(), 3000); 
 }
 
 function switchTab(tab, btn) {
@@ -3374,6 +3653,7 @@ function switchTab(tab, btn) {
 async function init() {
   console.log('🚀 Iniciando aplicación...');
   
+  await cargarEstadoSuspension();
   await cargarTurnosFirestore();
   console.log('📊 Datos cargados:', clientes.length, 'turnos');
   
@@ -3384,6 +3664,7 @@ async function init() {
   document.getElementById('adminMode').classList.remove('visible');
   document.getElementById('backupButtons').style.display = 'none';
   document.getElementById('btnLogout').style.display = 'none';
+  document.getElementById('btnSuspensionHeader').style.display = 'none';
   
   renderizarAdmin();
   renderizarCliente();
@@ -3393,6 +3674,7 @@ async function init() {
     const esAdminUser = await verificarRolAdmin(user.uid);
     if (esAdminUser) {
       document.getElementById('btnLogout').style.display = 'inline-flex';
+      document.getElementById('btnSuspensionHeader').style.display = 'inline-flex';
       usuarioActual = user;
       esAdmin = true;
     }
